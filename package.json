@@ -1,0 +1,26 @@
+{
+   "name": "slack-external-contacts",
+   "version": "0.0.1",
+   "description": "Awesome project developed with TypeORM.",
+   "devDependencies": {
+      "@types/node": "^8.0.29",
+      "@typescript-eslint/eslint-plugin": "~3.7.1",
+      "@typescript-eslint/parser": "~3.7.1",
+      "eslint": "~7.5.0",
+      "eslint-config-prettier": "~6.11.0",
+      "eslint-plugin-import": "~2.22.0",
+      "eslint-plugin-node": "~11.1.0",
+      "prettier": "2.0.5",
+      "ts-node": "3.3.0",
+      "typescript": "~3.3.3333"
+   },
+   "dependencies": {
+      "@slack/bolt": "~2.2.3",
+      "pg": "^8.0.3",
+      "reflect-metadata": "^0.1.10",
+      "typeorm": "0.2.25"
+   },
+   "scripts": {
+      "start": "ts-node src/index.ts"
+   }
+}
