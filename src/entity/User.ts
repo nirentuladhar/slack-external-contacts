@@ -19,7 +19,7 @@ export class User {
   @Column({ nullable: true })
   username: string
 
-  @Column()
+  @Column({ nullable: true })
   team_id: string
 
   @Column()

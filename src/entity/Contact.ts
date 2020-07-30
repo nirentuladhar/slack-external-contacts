@@ -22,6 +22,15 @@ export class Contact {
   @Column()
   lastName: string
 
+  @Column({ nullable: true })
+  email: string
+
+  @Column({ nullable: true })
+  phone: string
+
+  @Column({ nullable: true })
+  organisation: string
+
   @CreateDateColumn()
   createdAt: Date
 
