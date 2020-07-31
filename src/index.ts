@@ -56,6 +56,94 @@ app.action('contact_select', async ({ action, body, context, ack }) => {
   await messageRepository.save(message)
 })
 
+app.action('add_contact', async ({ action, body, context, ack, client }) => {
+  await ack()
+  await client.views.push({
+    token: context.botToken,
+    trigger_id: body['trigger_id'],
+    view: {
+      type: 'modal',
+      callback_id: 'create_contact',
+      title: { type: 'plain_text', text: 'Create external contact' },
+      close: {
+        type: 'plain_text',
+        text: 'Cancel',
+      },
+      private_metadata: body['view']['private_metadata'],
+      submit: {
+        type: 'plain_text',
+        text: 'Save',
+      },
+      blocks: [
+        {
+          type: 'input',
+          block_id: 'contact-first-name',
+          label: {
+            type: 'plain_text',
+            text: 'First Name',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'first-name-value',
+          },
+        },
+        {
+          type: 'input',
+          block_id: 'contact-last-name',
+          label: {
+            type: 'plain_text',
+            text: 'Last Name',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'last-name-value',
+          },
+        },
+        {
+          type: 'input',
+          block_id: 'contact-email',
+          label: {
+            type: 'plain_text',
+            text: 'Email',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'email-value',
+          },
+          optional: true,
+        },
+        {
+          type: 'input',
+          block_id: 'contact-phone',
+          label: {
+            type: 'plain_text',
+            text: 'Phone',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'phone-value',
+          },
+          optional: true,
+        },
+        {
+          type: 'input',
+          block_id: 'contact-notes',
+          label: {
+            type: 'plain_text',
+            text: 'Additional Notes',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'notes-value',
+            multiline: true,
+          },
+          optional: true,
+        },
+      ],
+    },
+  })
+})
+
 app.shortcut(
   'record_contact',
   async ({ shortcut, ack, respond, context, client }) => {
@@ -92,7 +180,7 @@ app.shortcut(
       await messageRepository.save(message)
     }
 
-    const result = await client.views.open({
+    await client.views.open({
       token: context.botToken,
       trigger_id: shortcut.trigger_id,
       view: {
@@ -111,7 +199,6 @@ app.shortcut(
         blocks: [
           {
             type: 'section',
-            block_id: 'section678',
             text: {
               type: 'mrkdwn',
               text: 'External contacts mentioned in this post:',
@@ -121,11 +208,28 @@ app.shortcut(
               type: 'multi_external_select',
               placeholder: {
                 type: 'plain_text',
-                text: 'Search existing contacts',
+                text: 'Search contacts',
                 emoji: true,
               },
               initial_options: message.contacts.map(optionForContact),
               min_query_length: 3,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: ' ',
+            },
+            accessory: {
+              action_id: 'add_contact',
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'Add new contact',
+                emoji: true,
+              },
+              value: 'add_contact',
             },
           },
         ],
@@ -133,6 +237,18 @@ app.shortcut(
     })
   },
 )
+
+app.view('create_contact', async ({ ack, body, view, context }) => {
+  await ack()
+  const contact = new Contact()
+  const values = view['state']['values']
+  contact.firstName = values['contact-first-name']['first-name-value']['value']
+  contact.lastName = values['contact-last-name']['last-name-value']['value']
+  contact.email = values['contact-email']['email-value']['value']
+  contact.phone = values['contact-phone']['phone-value']['value']
+  contact.notes = values['contact-notes']['notes-value']['value']
+  await contactRepository.save(contact)
+})
 
 app.view('update_contact', async ({ ack, body, view, context }) => {
   // Fake this response as data is actually saved when records are selected

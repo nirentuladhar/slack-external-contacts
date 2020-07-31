@@ -34,6 +34,9 @@ export class Contact {
   @CreateDateColumn()
   createdAt: Date
 
+  @Column({ nullable: true })
+  notes: string
+
   @UpdateDateColumn()
   updatedAt: Date
 
