@@ -5,11 +5,11 @@ import {
   CreateDateColumn,
   JoinTable,
   UpdateDateColumn,
-  ManyToOne,
   ManyToMany,
 } from 'typeorm'
 import { User } from './User'
 import { Message } from './Message'
+import { Organisation } from './Organisation'
 
 @Entity()
 export class Contact {
@@ -28,9 +28,6 @@ export class Contact {
   @Column({ nullable: true })
   phone: string
 
-  @Column({ nullable: true })
-  organisation: string
-
   @CreateDateColumn()
   createdAt: Date
 
@@ -43,4 +40,8 @@ export class Contact {
   @ManyToMany((type) => Message, (message) => message.contacts)
   @JoinTable()
   messages: Message[]
+
+  @ManyToMany((type) => Organisation, (organisation) => organisation.contacts)
+  @JoinTable()
+  organisations: Organisation[]
 }
