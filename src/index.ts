@@ -4,6 +4,7 @@ import { User } from './entity/User'
 import { Message } from './entity/Message'
 import { Contact } from './entity/Contact'
 import { Organisation } from './entity/Organisation'
+import { ProgramArea } from './entity/ProgramArea'
 import { App } from '@slack/bolt'
 import { _ } from 'lodash'
 import * as moment from 'moment'
@@ -13,6 +14,7 @@ let userRepository
 let messageRepository
 let contactRepository
 let organisationRepository
+let programRepository
 
 const options: ConnectionOptions = {
   type: 'postgres',
@@ -28,15 +30,24 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 })
 
-const nameWithOrgs = (contact) =>
-  `${contact.firstName} ${contact.lastName}${formattedOrganisationName(
-    contact,
-  )}`
+const nameForContact = (contact) => `${contact.firstName} ${contact.lastName}`
 
-const formattedOrganisationName = (contact) =>
+const nameWithOrgs = (contact) =>
+  `${nameForContact(contact)}${formattedOrganisationsName(contact)}`
+
+const formattedOrganisationsName = (contact) =>
   contact.organisations.length
-    ? ` [${contact.organisations.map((o) => o.name).join(', ')}]`
+    ? ` [${contact.organisations.map(formattedOrganisationDetails).join(', ')}]`
     : ''
+
+const formattedOrganisationDetails = (organisation) =>
+  organisation.name +
+  (organisation.previous_grants ? ':moneybag:' : '') +
+  (organisation.future_grants_in_consideration ? ':crystal_ball:' : '')
+
+const formattedOrganisationNameWithAbbrev = (organisation) =>
+  formattedOrganisationDetails(organisation) +
+  (organisation.abbreviation ? ` (${organisation.abbreviation})` : '')
 
 const optionForContact = (contact) => ({
   text: {
@@ -46,13 +57,87 @@ const optionForContact = (contact) => ({
   value: `${contact.id}`,
 })
 
-const optionForOrganisation = (organisation) => ({
+const fallback = '-'
+const valueOrFallback = (value) => value || fallback
+
+const contactCard = (contact) => [
+  {
+    type: 'divider',
+  },
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `${
+        contact.point ? ':calling: ' : ''
+      }:bust_in_silhouette: *${nameForContact(contact)}*`,
+    },
+  },
+  {
+    type: 'section',
+    fields: [
+      {
+        type: 'mrkdwn',
+        text: `*Point person:* ${contact.point ? 'yes' : 'no'}`,
+      },
+      {
+        type: 'mrkdwn',
+        text: `*Email:* ${valueOrFallback(contact.email)}`,
+      },
+      {
+        type: 'mrkdwn',
+        text: `*Phone:* ${valueOrFallback(contact.phone)}`,
+      },
+      {
+        type: 'mrkdwn',
+        text: `*Role:* ${valueOrFallback(contact.role)}`,
+      },
+    ],
+  },
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `*Notes:*\n${valueOrFallback(contact.notes)}`,
+    },
+  },
+]
+
+const optionForEntity = (entity) => ({
   text: {
     type: 'plain_text',
-    text: organisation.name,
+    text: entity.name,
   },
-  value: `${organisation.id}`,
+  value: `${entity.id}`,
 })
+
+const toCurrency = (field) => {
+  if (!field) return fallback
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'AUD',
+    minimumFractionDigits: 2,
+  }).format(field)
+}
+
+const footnoteText = [
+  ':moneybag: = Grants in the previous financial year',
+  ':crystal_ball: = Future grants',
+  ':calling: = Point person',
+].join('\n')
+
+const footnote = [
+  { type: 'divider' },
+  {
+    type: 'context',
+    elements: [
+      {
+        type: 'mrkdwn',
+        text: footnoteText,
+      },
+    ],
+  },
+]
 
 const textSearchSQL = (value) =>
   [
@@ -169,7 +254,33 @@ app.action('add_contact', async ({ action, body, context, ack, client }) => {
               text: 'Search organisation',
               emoji: true,
             },
-            options: organisations.map(optionForOrganisation),
+            options: organisations.map(optionForEntity),
+          },
+          optional: true,
+        },
+        {
+          type: 'input',
+          block_id: 'contact-role',
+          label: {
+            type: 'plain_text',
+            text: 'Role',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'role-value',
+          },
+          optional: true,
+        },
+        {
+          type: 'input',
+          block_id: 'contact-point',
+          label: {
+            type: 'plain_text',
+            text: 'Point Person',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'point-value',
           },
           optional: true,
         },
@@ -196,6 +307,9 @@ app.action(
   'add_organisation',
   async ({ action, body, context, ack, client }) => {
     await ack()
+    const programs = await programRepository.find({
+      order: { name: 'ASC' },
+    })
     await client.views.push({
       token: context.botToken,
       trigger_id: body['trigger_id'],
@@ -223,6 +337,137 @@ app.action(
             element: {
               type: 'plain_text_input',
               action_id: 'name-value',
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-abbreviation',
+            label: {
+              type: 'plain_text',
+              text: 'Abbreviated name e.g. TAI, TWS etc.',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'abbreviation-value',
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-previous_grants',
+            label: {
+              type: 'plain_text',
+              text: 'Grants in previous financial year in $',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'previous_grants-value',
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-grants_approved',
+            label: {
+              type: 'plain_text',
+              text: 'Approved grants in current year in $',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'grants_approved-value',
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-grants_distributed',
+            label: {
+              type: 'plain_text',
+              text: 'Grants distributed to date in $',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'grants_distributed-value',
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-grants_in_process',
+            label: {
+              type: 'plain_text',
+              text: 'Grants in process',
+            },
+            element: {
+              type: 'static_select',
+              action_id: 'grants_in_process-value',
+              options: [
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'no',
+                  },
+                  value: 'false',
+                },
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'yes',
+                  },
+                  value: 'true',
+                },
+              ],
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-future_grants_in_consideration',
+            label: {
+              type: 'plain_text',
+              text: 'Future grants in consideration',
+            },
+            element: {
+              type: 'static_select',
+              action_id: 'future_grants_in_consideration-value',
+              options: [
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'no',
+                  },
+                  value: 'no',
+                },
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'yes',
+                  },
+                  value: 'yes',
+                },
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'possible',
+                  },
+                  value: 'possible',
+                },
+              ],
+            },
+          },
+          {
+            type: 'input',
+            optional: true,
+            block_id: 'organisation-programs',
+            label: {
+              type: 'plain_text',
+              text: 'Program areas',
+            },
+            element: {
+              type: 'multi_static_select',
+              action_id: 'programs-value',
+              options: programs.map(optionForEntity),
             },
           },
           {
@@ -354,6 +599,8 @@ app.view('create_contact', async ({ ack, body, view, context }) => {
   contact.lastName = values['contact-last-name']['last-name-value']['value']
   contact.email = values['contact-email']['email-value']['value']
   contact.phone = values['contact-phone']['phone-value']['value']
+  contact.role = values['contact-role']['role-value']['value']
+  contact.point = values['contact-point']['point-value']['value'] === 'yes'
   contact.notes = values['contact-notes']['notes-value']['value']
   const selectedValues = values['contact-org']['organisation_select'][
     'selected_options'
@@ -368,8 +615,30 @@ app.view('create_organisation', async ({ ack, body, view, context }) => {
   await ack()
   const organisation = new Organisation()
   const values = view['state']['values']
-  organisation.name = values['organisation-name']['name-value']['value']
-  organisation.notes = values['organisation-notes']['notes-value']['value']
+  const textFields = [
+    'name',
+    'abbreviation',
+    'previous_grants',
+    'grants_approved',
+    'grants_distributed',
+    'notes',
+  ]
+  textFields.forEach((field) => {
+    organisation[field] =
+      values[`organisation-${field}`][`${field}-value`]['value']
+  })
+  const selectFields = ['grants_in_process', 'future_grants_in_consideration']
+  selectFields.forEach((field) => {
+    const selected_option =
+      values[`organisation-${field}`][`${field}-value`]['selected_option']
+    organisation[field] = selected_option ? selected_option.value : null
+  })
+  const selectedPrograms = values['organisation-programs']['programs-value'][
+    'selected_options'
+  ].map((o) => o.value)
+  organisation.programs = selectedPrograms.length
+    ? await programRepository.find({ id: In(selectedPrograms || []) })
+    : []
   await organisationRepository.save(organisation)
 })
 
@@ -435,8 +704,111 @@ app.command('/contacts', async ({ command, ack, respond }) => {
           },
         ])
         .flatten()
+        .concat(footnote)
         .value(),
     ),
+  })
+})
+
+app.command('/organisation', async ({ command, ack, respond }) => {
+  await ack()
+  if (!command.text) {
+    await respond(
+      'Please specify text to search organisation names with with e.g. `/organisations Sunrise`',
+    )
+    return
+  }
+  const matchingOrganisations = await organisationRepository
+    .createQueryBuilder('organisation')
+    .leftJoinAndSelect('organisation.programs', 'program')
+    .leftJoinAndSelect('organisation.contacts', 'contact')
+    .where('organisation.name ~* :value', { value: command.text })
+    .getMany()
+  if (!matchingOrganisations.length) {
+    await respond(
+      `No organisation details matched the text: \`${command.text}\``,
+    )
+    return
+  }
+  if (matchingOrganisations.length > 1) {
+    await respond(
+      `${matchingOrganisations
+        .map((o) => `*${o.name}*`)
+        .join(' and ')} both matched the text: \`${
+        command.text
+      }\`. Please make it more specific.`,
+    )
+    return
+  }
+  const organisation = matchingOrganisations[0]
+  const organisationContacts = _.sortBy(organisation.contacts, 'lastName')
+  await respond({
+    blocks: [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: formattedOrganisationNameWithAbbrev(organisation),
+          emoji: true,
+        },
+      },
+      {
+        type: 'divider',
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Grants in previous financial year:*\n${toCurrency(
+              organisation.previous_grants,
+            )}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Approved grants in current year:*\n${toCurrency(
+              organisation.grants_approved,
+            )}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Grants distributed to date:*\n${toCurrency(
+              organisation.grants_distributed,
+            )}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Grants in process:*\n${
+              organisation.grants_in_process ? 'yes' : 'no'
+            }`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Future grants in consideration:*\n${valueOrFallback(
+              organisation.future_grants_in_consideration,
+            )}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Program areas:*\n${valueOrFallback(
+              organisation.programs
+                .map((p) => p.name)
+                .sort()
+                .join(', '),
+            )}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*Notes:*\n${valueOrFallback(organisation.notes)}`,
+        },
+      },
+    ]
+      .concat(_.flatten(organisationContacts.map(contactCard)))
+      .concat(footnote),
   })
 })
 
@@ -446,6 +818,7 @@ createConnection(options).then(async (initialisedConnection) => {
   messageRepository = connection.getRepository(Message)
   contactRepository = connection.getRepository(Contact)
   organisationRepository = connection.getRepository(Organisation)
+  programRepository = connection.getRepository(ProgramArea)
   await app.start(process.env.PORT || 9000)
   console.log('⚡️ Bolt app is running!')
 })

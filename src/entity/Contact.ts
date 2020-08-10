@@ -32,13 +32,18 @@ export class Contact {
   createdAt: Date
 
   @Column({ nullable: true })
+  role: string
+
+  @Column({ nullable: true })
   notes: string
+
+  @Column({ nullable: true })
+  point: boolean
 
   @UpdateDateColumn()
   updatedAt: Date
 
   @ManyToMany((type) => Message, (message) => message.contacts)
-  @JoinTable()
   messages: Message[]
 
   @ManyToMany((type) => Organisation, (organisation) => organisation.contacts)

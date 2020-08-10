@@ -8,6 +8,7 @@ import {
   ManyToMany,
 } from 'typeorm'
 import { Contact } from './Contact'
+import { ProgramArea } from './ProgramArea'
 
 @Entity()
 export class Organisation {
@@ -16,6 +17,9 @@ export class Organisation {
 
   @Column()
   name: string
+
+  @Column({ nullable: true })
+  abbreviation: string
 
   @Column({ nullable: true })
   notes: string
@@ -27,6 +31,24 @@ export class Organisation {
   updatedAt: Date
 
   @ManyToMany((type) => Contact, (contact) => contact.organisations)
-  @JoinTable()
   contacts: Contact[]
+
+  @Column({ nullable: true })
+  previous_grants: string
+
+  @Column({ nullable: true })
+  grants_approved: string
+
+  @Column({ nullable: true })
+  grants_distributed: string
+
+  @Column({ nullable: true })
+  grants_in_process: string
+
+  @Column({ nullable: true })
+  future_grants_in_consideration: string
+
+  @ManyToMany((type) => ProgramArea, (program) => program.organisations)
+  @JoinTable()
+  programs: ProgramArea[]
 }
