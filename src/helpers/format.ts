@@ -10,7 +10,7 @@ export const formattedOrganisationsName = (contact) =>
     : ''
 
 export const formattedOrganisationDetails = (organisation) =>
-  organisation.name +
+  (organisation.abbreviation || organisation.name) +
   (organisation.previous_grants ? ':moneybag:' : '') +
   (organisation.future_grants_in_consideration ? ':crystal_ball:' : '')
 
