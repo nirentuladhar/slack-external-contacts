@@ -496,7 +496,8 @@ export default function (app: App, repositories) {
     contact.email = values['contact-email']['email-value']['value']
     contact.phone = values['contact-phone']['phone-value']['value']
     contact.role = values['contact-role']['role-value']['value']
-    contact.point = selectSubmission(values['contact-point']['point-value'])
+    contact.point =
+      selectSubmission(values['contact-point']['point-value']) === 'yes'
     contact.notes = values['contact-notes']['notes-value']['value']
     const selectedValues = multiSelectSubmission(
       values['contact-org']['organisation_select'],
