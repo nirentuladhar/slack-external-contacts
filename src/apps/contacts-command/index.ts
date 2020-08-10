@@ -49,9 +49,10 @@ export default function (app: App, { messageRepository }) {
                   message.user.slackID
                 }> referenced ${message.contacts
                   .map((contact) => '*' + nameWithOrgs(contact) + '*')
-                  .join(' and ')} at ${moment(message.createdAt).format(
-                  'h:mm a on MMMM Do YYYY',
-                )}:`,
+                  .join(' and ')} at ${moment
+                  .utc(message.createdAt)
+                  .local()
+                  .format('h:mm a on MMMM Do YYYY')}:`,
               },
             },
             {
