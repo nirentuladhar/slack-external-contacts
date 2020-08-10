@@ -7,7 +7,10 @@ import {
   nameForContact,
 } from '../../helpers/format'
 import { textSearchSQL } from '../../helpers/search'
-import { selectedValuesFromSubmission } from '../../helpers/submission'
+import {
+  selectSubmission,
+  multiSelectSubmission,
+} from '../../helpers/submission'
 import { optionForContact, optionForEntity } from '../../helpers/blocks'
 import { User } from '../../entity/User'
 import { Message } from '../../entity/Message'
@@ -155,8 +158,24 @@ export default function (app: App, repositories) {
               text: 'Point Person',
             },
             element: {
-              type: 'plain_text_input',
+              type: 'static_select',
               action_id: 'point-value',
+              options: [
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'no',
+                  },
+                  value: 'no',
+                },
+                {
+                  text: {
+                    type: 'plain_text',
+                    text: 'yes',
+                  },
+                  value: 'yes',
+                },
+              ],
             },
             optional: true,
           },
@@ -477,9 +496,9 @@ export default function (app: App, repositories) {
     contact.email = values['contact-email']['email-value']['value']
     contact.phone = values['contact-phone']['phone-value']['value']
     contact.role = values['contact-role']['role-value']['value']
-    contact.point = values['contact-point']['point-value']['value'] === 'yes'
+    contact.point = selectSubmission(values['contact-point']['point-value'])
     contact.notes = values['contact-notes']['notes-value']['value']
-    const selectedValues = selectedValuesFromSubmission(
+    const selectedValues = multiSelectSubmission(
       values['contact-org']['organisation_select'],
     )
     contact.organisations = selectedValues.length
@@ -506,11 +525,11 @@ export default function (app: App, repositories) {
     })
     const selectFields = ['grants_in_process', 'future_grants_in_consideration']
     selectFields.forEach((field) => {
-      const selected_option =
-        values[`organisation-${field}`][`${field}-value`]['selected_option']
-      organisation[field] = selected_option ? selected_option.value : null
+      organisation[field] = selectSubmission(
+        values[`organisation-${field}`][`${field}-value`],
+      )
     })
-    const selectedPrograms = selectedValuesFromSubmission(
+    const selectedPrograms = multiSelectSubmission(
       values['organisation-programs']['programs-value'],
     )
     organisation.programs = selectedPrograms.length
