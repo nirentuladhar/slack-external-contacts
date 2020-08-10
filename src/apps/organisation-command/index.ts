@@ -21,7 +21,10 @@ export default function (app: App, { organisationRepository }) {
       .createQueryBuilder('organisation')
       .leftJoinAndSelect('organisation.programs', 'program')
       .leftJoinAndSelect('organisation.contacts', 'contact')
-      .where('organisation.name ~* :value', { value: command.text })
+      .where(
+        'organisation.name ~* :value or organisation.abbreviation ~* :value',
+        { value: command.text },
+      )
       .getMany()
     if (!matchingOrganisations.length) {
       await respond(
