@@ -47,7 +47,7 @@ export default function (app: App, { messageRepository }) {
                 type: 'mrkdwn',
                 text: `:speech_balloon: <@${
                   message.user.slackID
-                }> spoke to ${message.contacts
+                }> referenced ${message.contacts
                   .map((contact) => '*' + nameWithOrgs(contact) + '*')
                   .join(' and ')} at ${moment(message.createdAt).format(
                   'h:mm a on MMMM Do YYYY',
