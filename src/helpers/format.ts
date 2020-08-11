@@ -1,8 +1,12 @@
 export const nameForContact = (contact) =>
   `${contact.firstName} ${contact.lastName}`
 
+const pointPerson = (contact) => (contact.point ? ':calling: ' : '')
+
 export const nameWithOrgs = (contact) =>
-  `${nameForContact(contact)}${formattedOrganisationsName(contact)}`
+  pointPerson(contact) +
+  nameForContact(contact) +
+  formattedOrganisationsName(contact)
 
 export const formattedOrganisationsName = (contact) =>
   contact.organisations.length
