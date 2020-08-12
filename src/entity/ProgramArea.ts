@@ -28,4 +28,7 @@ export class ProgramArea {
 
   @ManyToMany((type) => Organisation, (organisation) => organisation.programs)
   organisations: Organisation[]
+
+  @ManyToMany((type) => Contact, (contact) => contact.programs)
+  contacts: Contact[]
 }

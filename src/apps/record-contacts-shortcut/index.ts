@@ -41,6 +41,7 @@ export default function (app: App, repositories) {
     const matchingContacts = await contactRepository
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.organisations', 'organisation')
+      .leftJoinAndSelect('contact.programs', 'program')
       .where(textSearchSQL, { value: options.value })
       .getMany()
     await ack({ options: matchingContacts.map(optionForContact) })
@@ -49,6 +50,9 @@ export default function (app: App, repositories) {
   app.action('add_contact', async ({ action, body, context, ack, client }) => {
     await ack()
     const organisations = await organisationRepository.find({
+      order: { name: 'ASC' },
+    })
+    const programs = await programRepository.find({
       order: { name: 'ASC' },
     })
     await client.views.push({
@@ -68,6 +72,30 @@ export default function (app: App, repositories) {
           text: 'Save',
         },
         blocks: [
+          {
+            type: 'input',
+            block_id: 'contact-org',
+            label: {
+              type: 'plain_text',
+              text: 'Organisations',
+            },
+            hint: {
+              type: 'plain_text',
+              text:
+                'If you cannot find the organisation, click cancel and add the organisation first',
+            },
+            element: {
+              action_id: 'organisation_select',
+              type: 'multi_static_select',
+              placeholder: {
+                type: 'plain_text',
+                text: 'Search organisation',
+                emoji: true,
+              },
+              options: organisations.map(optionForEntity),
+            },
+            optional: true,
+          },
           {
             type: 'input',
             block_id: 'contact-first-name',
@@ -120,25 +148,6 @@ export default function (app: App, repositories) {
           },
           {
             type: 'input',
-            block_id: 'contact-org',
-            label: {
-              type: 'plain_text',
-              text: 'Organisations',
-            },
-            element: {
-              action_id: 'organisation_select',
-              type: 'multi_static_select',
-              placeholder: {
-                type: 'plain_text',
-                text: 'Search organisation',
-                emoji: true,
-              },
-              options: organisations.map(optionForEntity),
-            },
-            optional: true,
-          },
-          {
-            type: 'input',
             block_id: 'contact-role',
             label: {
               type: 'plain_text',
@@ -152,32 +161,22 @@ export default function (app: App, repositories) {
           },
           {
             type: 'input',
-            block_id: 'contact-point',
+            optional: true,
+            block_id: 'contact-programs',
             label: {
               type: 'plain_text',
-              text: 'Point Person',
+              text: 'Primary contact for',
+            },
+            hint: {
+              type: 'plain_text',
+              text:
+                'The areas of work this person is the primary contact for in their organisation',
             },
             element: {
-              type: 'static_select',
-              action_id: 'point-value',
-              options: [
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: 'no',
-                  },
-                  value: 'no',
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: 'yes',
-                  },
-                  value: 'yes',
-                },
-              ],
+              type: 'multi_static_select',
+              action_id: 'programs-value',
+              options: programs.map(optionForEntity),
             },
-            optional: true,
           },
           {
             type: 'input',
@@ -253,7 +252,7 @@ export default function (app: App, repositories) {
               block_id: 'organisation-previous_grants',
               label: {
                 type: 'plain_text',
-                text: 'Grants in previous financial year in $',
+                text: 'Grants in previous calendar year in $',
               },
               element: {
                 type: 'plain_text_input',
@@ -266,7 +265,7 @@ export default function (app: App, repositories) {
               block_id: 'organisation-grants_approved',
               label: {
                 type: 'plain_text',
-                text: 'Approved grants in current year in $',
+                text: 'Approved grants in current calendar year in $',
               },
               element: {
                 type: 'plain_text_input',
@@ -279,7 +278,7 @@ export default function (app: App, repositories) {
               block_id: 'organisation-grants_distributed',
               label: {
                 type: 'plain_text',
-                text: 'Grants distributed to date in $',
+                text: 'Total all time grants distributed to date in $',
               },
               element: {
                 type: 'plain_text_input',
@@ -376,6 +375,14 @@ export default function (app: App, repositories) {
                 type: 'plain_text_input',
                 action_id: 'notes-value',
                 multiline: true,
+              },
+              hint: {
+                type: 'plain_text',
+                text:
+                  'Record background context for the organisation - ' +
+                  'the role they play broadly and in relation to ' +
+                  'Sunrise, how we work with them, and notes on ' +
+                  'the depth and quality of our relationship.',
               },
               optional: true,
             },
@@ -496,8 +503,12 @@ export default function (app: App, repositories) {
     contact.email = values['contact-email']['email-value']['value']
     contact.phone = values['contact-phone']['phone-value']['value']
     contact.role = values['contact-role']['role-value']['value']
-    contact.point =
-      selectSubmission(values['contact-point']['point-value']) === 'yes'
+    const selectedPrograms = multiSelectSubmission(
+      values['contact-programs']['programs-value'],
+    )
+    contact.programs = selectedPrograms.length
+      ? await programRepository.find({ id: In(selectedPrograms) })
+      : []
     contact.notes = values['contact-notes']['notes-value']['value']
     const selectedValues = multiSelectSubmission(
       values['contact-org']['organisation_select'],

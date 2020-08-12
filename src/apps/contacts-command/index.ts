@@ -19,6 +19,7 @@ export default function (app: App, { messageRepository }) {
       .innerJoinAndSelect('message.user', 'user')
       .innerJoinAndSelect('message.contacts', 'contact')
       .leftJoinAndSelect('contact.organisations', 'organisation')
+      .leftJoinAndSelect('contact.programs', 'program')
       .where(textSearchSQL, { value: command.text })
       .orderBy('message.createdAt', 'DESC')
       .getMany()

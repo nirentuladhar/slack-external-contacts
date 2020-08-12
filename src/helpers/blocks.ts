@@ -1,9 +1,9 @@
 import { nameWithOrgs } from './format'
 
 const footnoteText = [
-  ':moneybag: = Grants in the previous financial year',
+  ':moneybag: = Grants in the previous calendar year',
   ':crystal_ball: = Future grants',
-  ':calling: = Point person',
+  ':calling: = Primary contact for their organisation in their area of expertise',
 ].join('\n')
 
 export const footnote = [

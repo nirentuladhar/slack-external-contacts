@@ -10,6 +10,7 @@ import {
 import { User } from './User'
 import { Message } from './Message'
 import { Organisation } from './Organisation'
+import { ProgramArea } from './ProgramArea'
 
 @Entity()
 export class Contact {
@@ -37,9 +38,6 @@ export class Contact {
   @Column({ nullable: true })
   notes: string
 
-  @Column({ nullable: true })
-  point: boolean
-
   @UpdateDateColumn()
   updatedAt: Date
 
@@ -49,4 +47,8 @@ export class Contact {
   @ManyToMany((type) => Organisation, (organisation) => organisation.contacts)
   @JoinTable()
   organisations: Organisation[]
+
+  @ManyToMany((type) => ProgramArea, (program) => program.contacts)
+  @JoinTable()
+  programs: ProgramArea[]
 }

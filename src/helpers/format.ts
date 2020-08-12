@@ -1,10 +1,11 @@
 export const nameForContact = (contact) =>
   `${contact.firstName} ${contact.lastName}`
 
-const pointPerson = (contact) => (contact.point ? ':calling: ' : '')
+export const primaryContactEmoji = (contact) =>
+  contact.programs.length ? ':calling: ' : ''
 
 export const nameWithOrgs = (contact) =>
-  pointPerson(contact) +
+  primaryContactEmoji(contact) +
   nameForContact(contact) +
   formattedOrganisationsName(contact)
 
@@ -24,6 +25,11 @@ export const formattedOrganisationNameWithAbbrev = (organisation) =>
 
 export const fallback = '-'
 export const valueOrFallback = (value) => value || fallback
+
+export const programsForContact = (contact) =>
+  contact.programs.length
+    ? contact.programs.map((p) => p.name).join(', ')
+    : fallback
 
 export const toCurrency = (field) => {
   if (!field) return fallback

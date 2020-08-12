@@ -5,6 +5,8 @@ import {
   toCurrency,
   valueOrFallback,
   nameForContact,
+  programsForContact,
+  primaryContactEmoji,
 } from '../../helpers/format'
 import { footnote } from '../../helpers/blocks'
 
@@ -21,6 +23,7 @@ export default function (app: App, { organisationRepository }) {
       .createQueryBuilder('organisation')
       .leftJoinAndSelect('organisation.programs', 'program')
       .leftJoinAndSelect('organisation.contacts', 'contact')
+      .leftJoinAndSelect('contact.programs', 'contact_program')
       .where(
         'organisation.name ~* :value or organisation.abbreviation ~* :value',
         { value: command.text },
@@ -62,7 +65,7 @@ export default function (app: App, { organisationRepository }) {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Grants in previous financial year:*\n${toCurrency(
+              text: `*Grants in previous calendar year:*\n${toCurrency(
                 organisation.previous_grants,
               )}`,
             },
@@ -123,9 +126,9 @@ const contactCard = (contact) => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${
-        contact.point ? ':calling: ' : ''
-      }:bust_in_silhouette: *${nameForContact(contact)}*`,
+      text: `${primaryContactEmoji(
+        contact,
+      )}:bust_in_silhouette: *${nameForContact(contact)}*`,
     },
   },
   {
@@ -133,7 +136,7 @@ const contactCard = (contact) => [
     fields: [
       {
         type: 'mrkdwn',
-        text: `*Point person:* ${contact.point ? 'yes' : 'no'}`,
+        text: `*Primary contact for:* ${programsForContact(contact)}`,
       },
       {
         type: 'mrkdwn',
