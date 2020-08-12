@@ -44,6 +44,11 @@ export default function (app: App, repositories) {
       .leftJoinAndSelect('contact.programs', 'program')
       .where(textSearchSQL, { value: options.value })
       .getMany()
+    console.dir(
+      matchingContacts.length
+        ? optionForContact(matchingContacts[0])
+        : 'no match',
+    )
     await ack({ options: matchingContacts.map(optionForContact) })
   })
 
