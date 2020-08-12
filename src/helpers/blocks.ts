@@ -31,6 +31,7 @@ export const optionForContact = (contact) => ({
   text: {
     type: 'plain_text',
     text: nameWithOrgs(contact),
+    emoji: true,
   },
   value: `${contact.id}`,
 })
