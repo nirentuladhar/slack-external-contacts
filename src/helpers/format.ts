@@ -5,9 +5,9 @@ export const primaryContactEmoji = (contact) =>
   contact.programs.length ? ':calling: ' : ''
 
 export const nameWithOrgs = (contact) =>
-  nameForContact(contact) +
   primaryContactEmoji(contact) +
-  formattedOrganisationsNames(contact, formattedOrganisationNameWithAbbrev)
+  nameForContact(contact) +
+  formattedOrganisationsNames(contact, formattedOrganisationDetails)
 
 export const nameWithOrgsShort = (contact) =>
   nameForContact(contact) + formattedOrganisationsNames(contact, shortFormat)
