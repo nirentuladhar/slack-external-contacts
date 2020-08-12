@@ -24,10 +24,10 @@ export class Organisation {
   @Column({ nullable: true })
   notes: string
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date
 
   @ManyToMany((type) => Contact, (contact) => contact.organisations)

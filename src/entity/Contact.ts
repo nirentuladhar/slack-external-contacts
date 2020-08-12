@@ -29,7 +29,7 @@ export class Contact {
   @Column({ nullable: true })
   phone: string
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date
 
   @Column({ nullable: true })
@@ -38,7 +38,7 @@ export class Contact {
   @Column({ nullable: true })
   notes: string
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date
 
   @ManyToMany((type) => Message, (message) => message.contacts)

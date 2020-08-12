@@ -25,10 +25,10 @@ export class Message {
   @Column()
   ts: string
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt: Date
 
   @ManyToOne((type) => User, (user) => user.messages)
