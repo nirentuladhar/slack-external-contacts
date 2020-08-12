@@ -126,9 +126,9 @@ const contactCard = (contact) => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${primaryContactEmoji(
+      text: `:bust_in_silhouette:${primaryContactEmoji(
         contact,
-      )}:bust_in_silhouette: *${nameForContact(contact)}*`,
+      )} *${nameForContact(contact)}*`,
     },
   },
   {
