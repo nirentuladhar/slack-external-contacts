@@ -1,4 +1,4 @@
-import { nameWithOrgs } from './format'
+import { nameWithOrgsShort } from './format'
 
 const footnoteText = [
   ':moneybag: = Grants in the previous calendar year',
@@ -30,7 +30,7 @@ export const optionForEntity = (entity) => ({
 export const optionForContact = (contact) => ({
   text: {
     type: 'plain_text',
-    text: nameWithOrgs(contact),
+    text: nameWithOrgsShort(contact),
     emoji: true,
   },
   value: `${contact.id}`,

@@ -7,12 +7,18 @@ export const primaryContactEmoji = (contact) =>
 export const nameWithOrgs = (contact) =>
   nameForContact(contact) +
   primaryContactEmoji(contact) +
-  formattedOrganisationsName(contact)
+  formattedOrganisationsNames(contact, formattedOrganisationNameWithAbbrev)
 
-export const formattedOrganisationsName = (contact) =>
+export const nameWithOrgsShort = (contact) =>
+  nameForContact(contact) + formattedOrganisationsNames(contact, shortFormat)
+
+export const formattedOrganisationsNames = (contact, format) =>
   contact.organisations.length
-    ? ` [${contact.organisations.map(formattedOrganisationDetails).join(', ')}]`
+    ? ` [${contact.organisations.map(format).join(', ')}]`
     : ''
+
+export const shortFormat = (organisation) =>
+  organisation.abbreviation || organisation.name
 
 export const formattedOrganisationDetails = (organisation) =>
   organisation.name +
