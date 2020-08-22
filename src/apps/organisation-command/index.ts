@@ -65,6 +65,10 @@ export default function (app: App, { organisationRepository }) {
           fields: [
             {
               type: 'mrkdwn',
+              text: `*Website:*\n${organisation.website}`,
+            },
+            {
+              type: 'mrkdwn',
               text: `*Grants in previous calendar year:*\n${toCurrency(
                 organisation.previous_grants,
               )}`,

@@ -22,6 +22,9 @@ export class Organisation {
   abbreviation: string
 
   @Column({ nullable: true })
+  website: string
+
+  @Column({ nullable: true })
   notes: string
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
