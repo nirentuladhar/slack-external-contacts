@@ -65,7 +65,7 @@ export default function (app: App, { organisationRepository }) {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Website:*\n${organisation.website}`,
+              text: `*Website:*\n${valueOrFallback(organisation.website)}`,
             },
             {
               type: 'mrkdwn',
