@@ -17,6 +17,9 @@ export const formattedOrganisationsNames = (contact, format) =>
     ? ` [${contact.organisations.map(format).join(', ')}]`
     : ''
 
+export const truncateForOption = (option) =>
+  option && option.length > 75 ? option.slice(0, 72) + '…' : option
+
 export const shortFormat = (organisation) =>
   organisation.abbreviation || organisation.name
 
