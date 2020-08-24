@@ -4,6 +4,6 @@ export const selectSubmission = (actionValue) => {
 }
 
 export const multiSelectSubmission = (actionValues) => {
-  if (!actionValues) return []
+  if (!actionValues || !actionValues['selected_options']) return []
   return actionValues['selected_options'].map((o) => o['value'])
 }

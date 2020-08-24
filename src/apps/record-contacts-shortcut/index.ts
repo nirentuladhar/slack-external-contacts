@@ -6,7 +6,7 @@ import {
   valueOrFallback,
   nameForContact,
 } from '../../helpers/format'
-import { textSearchSQL } from '../../helpers/search'
+import { textSearchSQL, organisationTextSearchSQL } from '../../helpers/search'
 import {
   selectSubmission,
   multiSelectSubmission,
@@ -37,6 +37,10 @@ export default function (app: App, repositories) {
     await messageRepository.save(message)
   })
 
+  app.action('organisation_select', async ({ action, body, context, ack }) => {
+    await ack()
+  })
+
   app.options('contact_select', async ({ options, ack }) => {
     const matchingContacts = await contactRepository
       .createQueryBuilder('contact')
@@ -44,12 +48,15 @@ export default function (app: App, repositories) {
       .leftJoinAndSelect('contact.programs', 'program')
       .where(textSearchSQL, { value: options.value })
       .getMany()
-    console.dir(
-      matchingContacts.length
-        ? optionForContact(matchingContacts[0])
-        : 'no match',
-    )
     await ack({ options: matchingContacts.map(optionForContact) })
+  })
+
+  app.options('organisation_select', async ({ options, ack }) => {
+    const matchingOrgs = await organisationRepository
+      .createQueryBuilder('organisation')
+      .where(organisationTextSearchSQL, { value: options.value })
+      .getMany()
+    await ack({ options: matchingOrgs.map(optionForEntity) })
   })
 
   app.action('add_contact', async ({ action, body, context, ack, client }) => {
@@ -91,13 +98,13 @@ export default function (app: App, repositories) {
             },
             element: {
               action_id: 'organisation_select',
-              type: 'multi_static_select',
+              type: 'multi_external_select',
               placeholder: {
                 type: 'plain_text',
                 text: 'Search organisation',
                 emoji: true,
               },
-              options: organisations.map(optionForEntity),
+              min_query_length: 3,
             },
             optional: true,
           },
