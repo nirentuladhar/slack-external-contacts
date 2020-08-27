@@ -24,7 +24,9 @@ export default function (app: App, { messageRepository }) {
       .orderBy('message.createdAt', 'DESC')
       .getMany()
     if (!matchingMessages.length) {
-      await respond(`No contact details matched the text: \`${command.text}\``)
+      await respond(
+        `No slack conversations have been recorded with a user or organisation whose name matches: \`${command.text}\``,
+      )
       return
     }
     await respond({
