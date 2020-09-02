@@ -1,7 +1,6 @@
 import { In } from 'typeorm'
 import { App } from '@slack/bolt'
 import {
-  formattedOrganisationNameWithAbbrev,
   toCurrency,
   valueOrFallback,
   nameForContact,

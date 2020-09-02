@@ -6,11 +6,13 @@ import {
   JoinTable,
   UpdateDateColumn,
   ManyToMany,
+  OneToMany,
 } from 'typeorm'
 import { User } from './User'
 import { Message } from './Message'
 import { Organisation } from './Organisation'
 import { ProgramArea } from './ProgramArea'
+import { Grant } from './Grant'
 
 @Entity()
 export class Contact {
@@ -51,4 +53,7 @@ export class Contact {
   @ManyToMany((type) => ProgramArea, (program) => program.contacts)
   @JoinTable()
   programs: ProgramArea[]
+
+  @OneToMany((type) => Grant, (grant) => grant.contact)
+  grants: Grant[]
 }

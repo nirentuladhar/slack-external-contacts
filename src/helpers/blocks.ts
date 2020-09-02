@@ -1,7 +1,7 @@
 import { nameWithOrgsShort, truncateForOption } from './format'
 
 const footnoteText = [
-  ':moneybag: = Grants in the previous calendar year',
+  ':moneybag: = Distributed grants',
   ':crystal_ball: = Future grants',
   ':calling: = Primary contact for their organisation in their area of expertise',
 ].join('\n')
@@ -35,3 +35,16 @@ export const optionForContact = (contact) => ({
   },
   value: `${contact.id}`,
 })
+
+export const orEmptyRow = (data) =>
+  data.length
+    ? data
+    : [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'None',
+          },
+        },
+      ]

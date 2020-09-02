@@ -1,3 +1,6 @@
+import * as moment from 'moment'
+import { _ } from 'lodash'
+
 export const nameForContact = (contact) =>
   `${contact.firstName} ${contact.lastName}`
 
@@ -23,10 +26,23 @@ export const truncateForOption = (option) =>
 export const shortFormat = (organisation) =>
   organisation.abbreviation || organisation.name
 
+export const futureGrant = (grant) =>
+  grant.status === 'unapproved' || grant.status === 'approved'
+
+export const grantEmoji = (grant) =>
+  futureGrant(grant) ? ':crystal_ball:' : ':moneybag:'
+
+export const orgHasPastGrants = (organisation) =>
+  organisation.grants &&
+  _.some(organisation.grants, (grant) => !futureGrant(grant))
+
+export const orgHasFutureGrants = (organisation) =>
+  organisation.grants && _.some(organisation.grants, futureGrant)
+
 export const formattedOrganisationDetails = (organisation) =>
   organisation.name +
-  (organisation.previous_grants ? ':moneybag:' : '') +
-  (organisation.future_grants_in_consideration ? ':crystal_ball:' : '')
+  (orgHasPastGrants(organisation) ? ':moneybag:' : '') +
+  (orgHasFutureGrants(organisation) ? ':crystal_ball:' : '')
 
 export const formattedOrganisationNameWithAbbrev = (organisation) =>
   formattedOrganisationDetails(organisation) +
@@ -34,6 +50,7 @@ export const formattedOrganisationNameWithAbbrev = (organisation) =>
 
 export const fallback = '-'
 export const valueOrFallback = (value) => value || fallback
+export const functionOrFallback = (value, fn) => (value ? fn(value) : fallback)
 
 export const programsForContact = (contact) =>
   contact.programs.length
@@ -48,3 +65,8 @@ export const toCurrency = (field) => {
     minimumFractionDigits: 2,
   }).format(field)
 }
+
+export const time = (timestamp) =>
+  moment(timestamp).format('h:mm a on MMMM Do YYYY')
+
+export const date = (date) => moment(date).format('MMMM Do YYYY')

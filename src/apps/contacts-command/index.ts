@@ -1,7 +1,6 @@
 import { _ } from 'lodash'
-import * as moment from 'moment'
 import { App } from '@slack/bolt'
-import { nameWithOrgs } from '../../helpers/format'
+import { nameWithOrgs, time } from '../../helpers/format'
 import { footnote } from '../../helpers/blocks'
 import { textSearchSQL } from '../../helpers/search'
 
@@ -20,6 +19,7 @@ export default function (app: App, { messageRepository }) {
       .innerJoinAndSelect('message.contacts', 'contact')
       .leftJoinAndSelect('contact.organisations', 'organisation')
       .leftJoinAndSelect('contact.programs', 'program')
+      .leftJoinAndSelect('organisation.grants', 'grant')
       .where(textSearchSQL, { value: command.text })
       .orderBy('message.createdAt', 'DESC')
       .getMany()
@@ -52,10 +52,7 @@ export default function (app: App, { messageRepository }) {
                   message.user.slackID
                 }> referenced ${message.contacts
                   .map((contact) => '*' + nameWithOrgs(contact) + '*')
-                  .join(' and ')} at ${moment
-                  .utc(message.createdAt)
-                  .local()
-                  .format('h:mm a on MMMM Do YYYY')}:`,
+                  .join(' and ')} at ${time(message.createdAt)}:`,
               },
             },
             {

@@ -6,9 +6,11 @@ import {
   JoinTable,
   UpdateDateColumn,
   ManyToMany,
+  OneToMany,
 } from 'typeorm'
 import { Contact } from './Contact'
 import { ProgramArea } from './ProgramArea'
+import { Grant } from './Grant'
 
 @Entity()
 export class Organisation {
@@ -36,22 +38,10 @@ export class Organisation {
   @ManyToMany((type) => Contact, (contact) => contact.organisations)
   contacts: Contact[]
 
-  @Column({ nullable: true })
-  previous_grants: string
-
-  @Column({ nullable: true })
-  grants_approved: string
-
-  @Column({ nullable: true })
-  grants_distributed: string
-
-  @Column({ nullable: true })
-  grants_in_process: string
-
-  @Column({ nullable: true })
-  future_grants_in_consideration: string
-
   @ManyToMany((type) => ProgramArea, (program) => program.organisations)
   @JoinTable()
   programs: ProgramArea[]
+
+  @OneToMany((type) => Grant, (grant) => grant.organisation)
+  grants: Grant[]
 }
