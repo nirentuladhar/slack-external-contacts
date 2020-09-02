@@ -57,11 +57,11 @@ export const programsForContact = (contact) =>
     ? contact.programs.map((p) => p.name).join(', ')
     : fallback
 
-export const toCurrency = (field) => {
+export const toCurrency = (field, currency) => {
   if (!field) return fallback
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'AUD',
+    currency: currency || 'AUD',
     minimumFractionDigits: 2,
   }).format(field)
 }

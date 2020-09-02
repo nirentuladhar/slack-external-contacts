@@ -180,7 +180,7 @@ const grantCard = (grant) => [
       },
       {
         type: 'mrkdwn',
-        text: `*Amount:* ${toCurrency(grant.amount)} (${grant.ccy})`,
+        text: `*Amount:* ${toCurrency(grant.amount, grant.ccy)}`,
       },
       {
         type: 'mrkdwn',
