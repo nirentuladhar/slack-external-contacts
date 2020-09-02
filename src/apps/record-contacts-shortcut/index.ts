@@ -4,6 +4,7 @@ import {
   toCurrency,
   valueOrFallback,
   nameForContact,
+  nameWithOrgsShort,
 } from '../../helpers/format'
 import { textSearchSQL, organisationTextSearchSQL } from '../../helpers/search'
 import {
@@ -561,8 +562,28 @@ export default function (app: App, repositories) {
     await organisationRepository.save(organisation)
   })
 
-  app.view('update_contact', async ({ ack }) => {
-    // Fake this response as data is actually saved when records are selected
+  app.view('update_contact', async ({ ack, body, context }) => {
     await ack()
+    // The contact selection is not actually saved here but we'll give the user feedback now.
+    let message = await messageRepository.findOne({
+      where: { id: body['view'].private_metadata },
+      relations: ['contacts', 'contacts.organisations'],
+    })
+    const feedback =
+      message.contacts && message.contacts.length
+        ? `The slack message has been successfully associated with ${message.contacts.map(
+            nameWithOrgsShort,
+          )}.`
+        : 'Slack message has been updated with no associated contacts.'
+    try {
+      await app.client.chat.postMessage({
+        text: feedback,
+        token: context.botToken,
+        channel: message.channelID,
+        thread_ts: message.ts,
+      })
+    } catch (error) {
+      if (!error.message.match(/channel_not_found/)) throw error
+    }
   })
 }
