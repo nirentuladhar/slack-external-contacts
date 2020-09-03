@@ -117,7 +117,7 @@ export default function (app: App, { organisationRepository }) {
             },
           },
         ])
-        .concat(_.flatten(organisationContacts.map(contactCard)))
+        .concat(orEmptyRow(_.flatten(organisationContacts.map(contactCard))))
         .concat(footnote),
     })
   })
