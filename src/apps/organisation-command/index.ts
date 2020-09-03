@@ -184,7 +184,10 @@ const grantCard = (grant) => [
       },
       {
         type: 'mrkdwn',
-        text: `*Granted date:* ${functionOrFallback(grant.startedAt, date)}`,
+        text: `*Approved or Granted:* ${functionOrFallback(
+          grant.startedAt,
+          date,
+        )}`,
       },
       {
         type: 'mrkdwn',
