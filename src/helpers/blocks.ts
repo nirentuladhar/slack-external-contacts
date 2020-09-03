@@ -1,4 +1,4 @@
-import { nameWithOrgsShort, truncateForOption } from './format'
+import { nameWithOrgsShort, truncateForOption, fallback } from './format'
 
 const footnoteText = [
   ':moneybag: = Distributed grants',
@@ -44,7 +44,7 @@ export const orEmptyRow = (data) =>
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: 'None',
+            text: fallback,
           },
         },
       ]

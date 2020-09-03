@@ -27,7 +27,7 @@ export const shortFormat = (organisation) =>
   organisation.abbreviation || organisation.name
 
 export const futureGrant = (grant) =>
-  grant.status === 'unapproved' || grant.status === 'approved'
+  grant.status && grant.status.match(/approved|new/i)
 
 export const grantEmoji = (grant) =>
   futureGrant(grant) ? ':crystal_ball:' : ':moneybag:'
