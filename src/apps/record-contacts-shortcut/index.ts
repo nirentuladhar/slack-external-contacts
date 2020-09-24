@@ -516,14 +516,16 @@ export default function (app: App, repositories) {
     contact.phone = values['contact-phone']['phone-value']['value']
     contact.role = values['contact-role']['role-value']['value']
     const selectedPrograms = multiSelectSubmission(
-      values['contact-programs']['programs-value'],
+      values['contact-programs'],
+      'programs-value',
     )
     contact.programs = selectedPrograms.length
       ? await programRepository.find({ id: In(selectedPrograms) })
       : []
     contact.notes = values['contact-notes']['notes-value']['value']
     const selectedValues = multiSelectSubmission(
-      values['contact-org']['organisation_select'],
+      values['contact-org'],
+      'organisation_select',
     )
     contact.organisations = selectedValues.length
       ? await organisationRepository.find({ id: In(selectedValues) })
@@ -554,7 +556,8 @@ export default function (app: App, repositories) {
       )
     })
     const selectedPrograms = multiSelectSubmission(
-      values['organisation-programs']['programs-value'],
+      values['organisation-programs'],
+      'programs-value',
     )
     organisation.programs = selectedPrograms.length
       ? await programRepository.find({ id: In(selectedPrograms) })
@@ -583,7 +586,7 @@ export default function (app: App, repositories) {
         thread_ts: message.ts,
       })
     } catch (error) {
-      if (!error.message.match(/channel_not_found/)) throw error
+      if (!error.message.match(/channel_not_found|not_in_channel/)) throw error
     }
   })
 }
