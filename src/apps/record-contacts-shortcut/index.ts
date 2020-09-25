@@ -8,6 +8,7 @@ import {
 } from '../../helpers/format'
 import { textSearchSQL, organisationTextSearchSQL } from '../../helpers/search'
 import {
+  fieldSubmission,
   selectSubmission,
   multiSelectSubmission,
 } from '../../helpers/submission'
@@ -509,12 +510,17 @@ export default function (app: App, repositories) {
     await ack()
     const contact = new Contact()
     const values = view['state']['values']
-    contact.firstName =
-      values['contact-first-name']['first-name-value']['value']
-    contact.lastName = values['contact-last-name']['last-name-value']['value']
-    contact.email = values['contact-email']['email-value']['value']
-    contact.phone = values['contact-phone']['phone-value']['value']
-    contact.role = values['contact-role']['role-value']['value']
+    contact.firstName = fieldSubmission(
+      values['contact-first-name'],
+      'first-name-value',
+    )
+    contact.lastName = fieldSubmission(
+      values['contact-last-name'],
+      'last-name-value',
+    )
+    contact.email = fieldSubmission(values['contact-email'], 'email-value')
+    contact.phone = fieldSubmission(values['contact-phone'], 'phone-value')
+    contact.role = fieldSubmission(values['contact-role'], 'role-value')
     const selectedPrograms = multiSelectSubmission(
       values['contact-programs'],
       'programs-value',
@@ -522,7 +528,7 @@ export default function (app: App, repositories) {
     contact.programs = selectedPrograms.length
       ? await programRepository.find({ id: In(selectedPrograms) })
       : []
-    contact.notes = values['contact-notes']['notes-value']['value']
+    contact.notes = fieldSubmission(values['contact-notes'], 'notes-value')
     const selectedValues = multiSelectSubmission(
       values['contact-org'],
       'organisation_select',
@@ -546,8 +552,10 @@ export default function (app: App, repositories) {
       'notes',
     ]
     textFields.forEach((field) => {
-      organisation[field] =
-        values[`organisation-${field}`][`${field}-value`]['value']
+      organisation[field] = fieldSubmission(
+        values[`organisation-${field}`],
+        `${field}-value`,
+      )
     })
     const selectFields = ['grants_in_process', 'future_grants_in_consideration']
     selectFields.forEach((field) => {

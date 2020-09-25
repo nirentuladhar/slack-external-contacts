@@ -9,3 +9,8 @@ export const multiSelectSubmission = (section, fieldName) => {
   if (!actionValues || !actionValues['selected_options']) return []
   return actionValues['selected_options'].map((o) => o['value'])
 }
+
+export const fieldSubmission = (section, fieldName) => {
+  if (!section || !section[fieldName]) return
+  return section[fieldName]['value']
+}
