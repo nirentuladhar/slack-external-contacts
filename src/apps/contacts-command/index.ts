@@ -40,29 +40,33 @@ export default function (app: App, { messageRepository }) {
         },
       ].concat(
         _(matchingMessages)
-          .map((message) => [
-            {
-              type: 'divider',
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `:speech_balloon: <@${
-                  message.user.slackID
-                }> referenced ${message.contacts
-                  .map((contact) => '*' + nameWithOrgs(contact) + '*')
-                  .join(' and ')} at ${time(message.createdAt)}:`,
+          .map((message) =>
+            [
+              {
+                type: 'divider',
               },
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: message.text,
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `:speech_balloon: <@${
+                    message.user.slackID
+                  }> referenced ${message.contacts
+                    .map((contact) => '*' + nameWithOrgs(contact) + '*')
+                    .join(' and ')} at ${time(message.createdAt)}:`,
+                },
               },
-            },
-          ])
+            ].concat(
+              // Split string into 3K section chunk to bypass character limit in block
+              (message.text || '').match(/.{1,3000}/g).map((chunk) => ({
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: chunk,
+                },
+              })),
+            ),
+          )
           .flatten()
           .concat(footnote)
           .value(),
