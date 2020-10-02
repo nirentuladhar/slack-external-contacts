@@ -14,7 +14,7 @@ import {
 import { footnote, orEmptyRow } from '../../helpers/blocks'
 
 export default function (app: App, { organisationRepository }) {
-  app.command('/organisation', async ({ command, ack, respond }) => {
+  app.command('/org', async ({ command, ack, respond }) => {
     await ack()
     if (!command.text) {
       await respond(
