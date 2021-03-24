@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { ConnectionOptions, createConnection } from 'typeorm'
+import { createConnection } from 'typeorm'
 import { User } from './entity/User'
 import { Message } from './entity/Message'
 import { Contact } from './entity/Contact'
@@ -10,21 +10,12 @@ import addContactsCommand from './apps/contacts-command'
 import addRecordContactsShortcut from './apps/record-contacts-shortcut'
 import { App } from '@slack/bolt'
 
-const options: ConnectionOptions = {
-  type: 'postgres',
-  url: process.env.DATABASE_URL,
-  logging: 'all',
-  synchronize: true,
-  entities: [__dirname + '/entity/*'],
-  migrations: ['src/migration/**/*.ts'],
-}
-
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 })
 
-createConnection(options).then(async (connection) => {
+createConnection().then(async (connection) => {
   const repositories = {
     userRepository: connection.getRepository(User),
     messageRepository: connection.getRepository(Message),

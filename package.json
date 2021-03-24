@@ -1,7 +1,6 @@
 {
    "name": "slack-external-contacts",
-   "version": "0.0.1",
-   "description": "Awesome project developed with TypeORM.",
+   "private": true,
    "devDependencies": {
       "@types/node": "^8.0.29",
       "@typescript-eslint/eslint-plugin": "~3.7.1",
@@ -26,6 +25,8 @@
       "start": "node build/index.js",
       "build": "tsc",
       "postinstall": "npm run build",
-      "dev": "ts-node src/index.ts"
+      "dev": "ts-node src/index.ts",
+      "typeorm": "node --require ./node_modules/ts-node/register ./node_modules/typeorm/cli.js",
+      "migrate": "npm run typeorm migration:run"
    }
 }
