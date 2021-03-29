@@ -35,6 +35,6 @@ createConnection(options).then(async (connection) => {
   addOrganisationCommand(app, repositories)
   addContactsCommand(app, repositories)
   addRecordContactsShortcut(app, repositories)
-  await app.start(process.env.PORT || 9000)
+  await app.start(parseInt(process.env.PORT, 10) || 9000)
   console.log('⚡️ Bolt app is running!')
 }, console.error.bind(console))
