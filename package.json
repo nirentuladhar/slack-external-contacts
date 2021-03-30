@@ -16,11 +16,10 @@
    },
    "dependencies": {
       "@slack/bolt": "^3.3.0",
+      "airtable": "^0.10.1",
       "lodash": "^4.17.21",
       "moment": "^2.29.1",
-      "pg": "^8.5.1",
-      "reflect-metadata": "^0.1.13",
-      "typeorm": "^0.2.31"
+      "reflect-metadata": "^0.1.13"
    },
    "scripts": {
       "start": "node build/index.js",

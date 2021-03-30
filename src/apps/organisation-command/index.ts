@@ -1,39 +1,26 @@
 import { _ } from 'lodash'
 import { App } from '@slack/bolt'
 import {
-  formattedOrganisationNameWithAbbrev,
   toCurrency,
   valueOrFallback,
   functionOrFallback,
   nameForContact,
   grantEmoji,
-  programsForContact,
-  primaryContactEmoji,
   date,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
+import { searchOrgsWithDetails } from '../../lib/airtable'
 
-export default function (app: App, { organisationRepository }) {
+export default function (app: App): void {
   app.command('/org', async ({ command, ack, respond }) => {
     await ack()
     if (!command.text) {
       await respond(
-        'Please specify text to search organisation names with with e.g. `/organisations Sunrise`',
+        'Please specify text to search organisation names with e.g. `/org Sunrise`',
       )
       return
     }
-    const matchingOrganisations = await organisationRepository
-      .createQueryBuilder('organisation')
-      .leftJoinAndSelect('organisation.programs', 'program')
-      .leftJoinAndSelect('organisation.contacts', 'contact')
-      .leftJoinAndSelect('contact.programs', 'contact_program')
-      .leftJoinAndSelect('organisation.grants', 'grant')
-      .leftJoinAndSelect('grant.contact', 'contact_grant')
-      .where(
-        'organisation.name ~* :value or organisation.abbreviation ~* :value',
-        { value: command.text },
-      )
-      .getMany()
+    const matchingOrganisations = await searchOrgsWithDetails(command.text)
     if (!matchingOrganisations.length) {
       await respond(
         `No organisation details matched the text: \`${command.text}\``,
@@ -43,23 +30,29 @@ export default function (app: App, { organisationRepository }) {
     if (matchingOrganisations.length > 1) {
       await respond(
         `${matchingOrganisations
-          .map((o) => `*${o.name}*`)
-          .join(' and ')} both matched the text: \`${
+          .map((o) => `*${o['EC-display']}*`)
+          .join(' and ')} matched the text: \`${
           command.text
         }\`. Please make it more specific.`,
       )
       return
     }
     const organisation = matchingOrganisations[0]
-    const organisationContacts = _.sortBy(organisation.contacts, 'lastName')
-    const organisationGrants = _.sortBy(organisation.grants, 'startedAt')
+    console.log(organisation)
+    const contacts = (organisation['EC-contact-info'] || []).map((info) => {
+      const [firstName, lastName, email, phone, role, notes] = info.split('|')
+      return { firstName, lastName, email, phone, role, notes }
+    })
+    console.log(contacts)
+    const organisationContacts = _.sortBy(contacts, 'lastName')
+    // const organisationGrants = _.sortBy(grants, 'startedAt')
     await respond({
       blocks: [
         {
           type: 'header',
           text: {
             type: 'plain_text',
-            text: formattedOrganisationNameWithAbbrev(organisation),
+            text: organisation['EC-display'],
             emoji: true,
           },
         },
@@ -71,15 +64,12 @@ export default function (app: App, { organisationRepository }) {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Website:*\n${valueOrFallback(organisation.website)}`,
+              text: `*Website:*\n${valueOrFallback(organisation['Website'])}`,
             },
             {
               type: 'mrkdwn',
               text: `*Program areas:*\n${valueOrFallback(
-                organisation.programs
-                  .map((p) => p.name)
-                  .sort()
-                  .join(', '),
+                (organisation['EC-program-display'] || []).sort().join(', '),
               )}`,
             },
           ],
@@ -88,7 +78,7 @@ export default function (app: App, { organisationRepository }) {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*Notes:*\n${valueOrFallback(organisation.notes)}`,
+            text: `*Notes:*\n${valueOrFallback(organisation['Notes'])}`,
           },
         },
         {
@@ -103,7 +93,7 @@ export default function (app: App, { organisationRepository }) {
           },
         },
       ]
-        .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
+        // .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
         .concat([
           {
             type: 'divider',
@@ -123,14 +113,12 @@ export default function (app: App, { organisationRepository }) {
   })
 }
 
-const contactCard = (contact) => [
+const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
   {
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `:bust_in_silhouette: ${primaryContactEmoji(
-        contact,
-      )}*${nameForContact(contact)}*`,
+      text: `:bust_in_silhouette: *${firstName} ${lastName}*`,
     },
   },
   {
@@ -138,19 +126,15 @@ const contactCard = (contact) => [
     fields: [
       {
         type: 'mrkdwn',
-        text: `*Primary contact for:* ${programsForContact(contact)}`,
+        text: `*Email:* ${valueOrFallback(email)}`,
       },
       {
         type: 'mrkdwn',
-        text: `*Email:* ${valueOrFallback(contact.email)}`,
+        text: `*Phone:* ${valueOrFallback(phone)}`,
       },
       {
         type: 'mrkdwn',
-        text: `*Phone:* ${valueOrFallback(contact.phone)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Role:* ${valueOrFallback(contact.role)}`,
+        text: `*Role:* ${valueOrFallback(role)}`,
       },
     ],
   },
@@ -158,7 +142,7 @@ const contactCard = (contact) => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `*Notes:*\n${valueOrFallback(contact.notes)}`,
+      text: `*Notes:*\n${valueOrFallback(notes)}`,
     },
   },
 ]
@@ -168,7 +152,7 @@ const grantCard = (grant) => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${grantEmoji(grant)} *${grant.proposal}*`,
+      text: `${grantEmoji(grant)} *${grant.proposal}*`, // (grant agreement purpose)
     },
   },
   {
@@ -200,3 +184,11 @@ const grantCard = (grant) => [
     ],
   },
 ]
+
+// link to partner record in stacker
+// grant summary:
+// total grants # this year & last year (like grant plan)
+// - how much this year & how much last year
+// grant line items:
+// this year: grant w/ hyperlink & AUD equiv & USD equiv
+// last year: grant w/ hyperlink & AUD equiv & USD equiv

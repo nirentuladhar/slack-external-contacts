@@ -1,10 +1,10 @@
 import { _ } from 'lodash'
 import { App } from '@slack/bolt'
-import { nameWithOrgs, time } from '../../helpers/format'
+import { time } from '../../helpers/format'
 import { footnote } from '../../helpers/blocks'
-import { textSearchSQL } from '../../helpers/search'
+import { searchMessages } from '../../lib/airtable'
 
-export default function (app: App, { messageRepository }) {
+export default function (app: App): void {
   app.command('/contacts', async ({ command, ack, respond }) => {
     await ack()
     if (!command.text) {
@@ -13,22 +13,20 @@ export default function (app: App, { messageRepository }) {
       )
       return
     }
-    const matchingMessages = await messageRepository
-      .createQueryBuilder('message')
-      .innerJoinAndSelect('message.user', 'user')
-      .innerJoinAndSelect('message.contacts', 'contact')
-      .leftJoinAndSelect('contact.organisations', 'organisation')
-      .leftJoinAndSelect('contact.programs', 'program')
-      .leftJoinAndSelect('organisation.grants', 'grant')
-      .where(textSearchSQL, { value: command.text })
-      .orderBy('message.createdAt', 'DESC')
-      .getMany()
+    const matchingMessages = await searchMessages(command.text)
     if (!matchingMessages.length) {
       await respond(
         `No slack conversations have been recorded with a user or organisation whose name matches: \`${command.text}\``,
       )
       return
     }
+
+    const contactsDisplay = (msg) =>
+      msg.contactsList
+        .split(', ')
+        .map((contact) => `*${contact}*`)
+        .join(' and ')
+
     await respond({
       blocks: [
         {
@@ -50,10 +48,10 @@ export default function (app: App, { messageRepository }) {
                 text: {
                   type: 'mrkdwn',
                   text: `:speech_balloon: <@${
-                    message.user.slackID
-                  }> referenced ${message.contacts
-                    .map((contact) => '*' + nameWithOrgs(contact) + '*')
-                    .join(' and ')} at ${time(message.createdAt)}:`,
+                    message.slackID
+                  }> referenced ${contactsDisplay(message)} at ${time(
+                    message.createdAt,
+                  )}:`,
                 },
               },
             ].concat(
