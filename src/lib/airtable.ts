@@ -28,7 +28,6 @@ export const searchContacts = async (term: string) => {
   const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
   const params = {
     view: 'Slack External Contacts filter',
-    maxRecords: 10,
     fields: ['RECORD_ID', 'EC-display'],
     filterByFormula: `REGEX_MATCH(LOWER({EC-display}), LOWER('.*${sanitisedTerm}.*'))`,
   }
@@ -36,21 +35,20 @@ export const searchContacts = async (term: string) => {
 }
 
 export const searchOrgs = async (term: string) => {
-  const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
+  const sanitisedTerm = (term || '').replace(/^'"/, '').replace(/'"$/, '')
   const params = {
     view: 'Slack External Contacts filter',
-    maxRecords: 10,
     fields: ['RECORD_ID', 'EC-display'],
-    filterByFormula: `REGEX_MATCH(LOWER({EC-display}), LOWER('.*${sanitisedTerm}.*'))`,
+    filterByFormula: `REGEX_MATCH(LOWER({EC-display}), '.*' & LOWER("${sanitisedTerm}") & '.*')`,
   }
-  return orgTable.select(params).all()
+  const records = await orgTable.select(params).all()
+  return records.map((r) => r.fields)
 }
 
-export const searchOrgsWithDetails = async (term: string) => {
-  const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
+export const orgDetails = async (recordID: string) => {
   const params = {
     view: 'Slack External Contacts filter',
-    maxRecords: 5,
+    maxRecords: 1,
     fields: [
       'RECORD_ID',
       'EC-display',
@@ -60,10 +58,10 @@ export const searchOrgsWithDetails = async (term: string) => {
       'EC-program-display',
       'Grants',
     ],
-    filterByFormula: `REGEX_MATCH(LOWER({EC-display}), LOWER('.*${sanitisedTerm}.*'))`,
+    filterByFormula: `RECORD_ID()="${recordID}"`,
   }
-  const records = await orgTable.select(params).all()
-  return records.map((r) => r.fields)
+  const records = await orgTable.select(params).all() // .find() doesn't allow specifiying fields
+  return (records || []).map((r) => r.fields)[0]
 }
 
 export const allPrograms = async () => {

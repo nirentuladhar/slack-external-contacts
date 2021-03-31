@@ -9,7 +9,7 @@ import {
   date,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
-import { searchOrgsWithDetails } from '../../lib/airtable'
+import { searchOrgs, orgDetails } from '../../lib/airtable'
 
 export default function (app: App): void {
   app.command('/org', async ({ command, ack, respond }) => {
@@ -20,7 +20,9 @@ export default function (app: App): void {
       )
       return
     }
-    const matchingOrganisations = await searchOrgsWithDetails(command.text)
+
+    const matchingOrganisations = await searchOrgs(command.text)
+    // console.log(matchingOrganisations)
     if (!matchingOrganisations.length) {
       await respond(
         `No organisation details matched the text: \`${command.text}\``,
@@ -37,15 +39,17 @@ export default function (app: App): void {
       )
       return
     }
-    const organisation = matchingOrganisations[0]
-    console.log(organisation)
+
+    const organisation = await orgDetails(matchingOrganisations[0].RECORD_ID)
     const contacts = (organisation['EC-contact-info'] || []).map((info) => {
       const [firstName, lastName, email, phone, role, notes] = info.split('|')
       return { firstName, lastName, email, phone, role, notes }
     })
     console.log(contacts)
+
     const organisationContacts = _.sortBy(contacts, 'lastName')
     // const organisationGrants = _.sortBy(grants, 'startedAt')
+
     await respond({
       blocks: [
         {
@@ -152,7 +156,7 @@ const grantCard = (grant) => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${grantEmoji(grant)} *${grant.proposal}*`, // (grant agreement purpose)
+      text: `${grantEmoji(grant)} *${grant.proposal}*`,
     },
   },
   {
@@ -187,8 +191,9 @@ const grantCard = (grant) => [
 
 // link to partner record in stacker
 // grant summary:
-// total grants # this year & last year (like grant plan)
-// - how much this year & how much last year
+// total grants: how much this year & how much last year
 // grant line items:
 // this year: grant w/ hyperlink & AUD equiv & USD equiv
 // last year: grant w/ hyperlink & AUD equiv & USD equiv
+
+// (grant agreement purpose)
