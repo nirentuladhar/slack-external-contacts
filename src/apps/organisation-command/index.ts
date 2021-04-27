@@ -45,11 +45,15 @@ export default function (app: App): void {
       const [firstName, lastName, email, phone, role, notes] = info.split('|')
       return { firstName, lastName, email, phone, role, notes }
     })
-    console.log(contacts)
-
+    console.log(organisation['EC-grant-info'])
+    const grants = (organisation['EC-grant-info'] || []).map((info) => {
+      const [yearMonth, grant, url, codedAmounts, plannedAUD] = info.split('|')
+      return { yearMonth, grant, url, codedAmounts, plannedAUD }
+    })
+    console.log(grants)
     const organisationContacts = _.sortBy(contacts, 'lastName')
-    // const organisationGrants = _.sortBy(grants, 'startedAt')
-
+    const organisationGrants = _.sortBy(grants, 'yearMonth')
+    console.log(organisationGrants)
     await respond({
       blocks: [
         {
@@ -97,7 +101,7 @@ export default function (app: App): void {
           },
         },
       ]
-        // .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
+        .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
         .concat([
           {
             type: 'divider',
@@ -151,40 +155,33 @@ const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
   },
 ]
 
-const grantCard = (grant) => [
+const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
   {
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${grantEmoji(grant)} *${grant.proposal}*`,
+      text: `<${url}|${grant}>`,
     },
   },
   {
     type: 'section',
     fields: [
+      // {
+      //   type: 'mrkdwn',
+      //   text: `*Status:* ${valueOrFallback(grant.status)}`,
+      // },
       {
         type: 'mrkdwn',
-        text: `*Status:* ${valueOrFallback(grant.status)}`,
+        text: `*Amount:* ${plannedAUD} (${codedAmounts})`,
       },
       {
         type: 'mrkdwn',
-        text: `*Amount:* ${toCurrency(grant.amount, grant.ccy)}`,
+        text: `*Granted date:* ${valueOrFallback(yearMonth)}`,
       },
-      {
-        type: 'mrkdwn',
-        text: `*Granted date:* ${functionOrFallback(grant.startedAt, date)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Primary contact:* ${functionOrFallback(
-          grant.contact,
-          nameForContact,
-        )}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Code:* ${valueOrFallback(grant.project_code)}`,
-      },
+      // {
+      //   type: 'mrkdwn',
+      //   text: `*Primary contact:* ${valueOrFallback()}`,
+      // },
     ],
   },
 ]

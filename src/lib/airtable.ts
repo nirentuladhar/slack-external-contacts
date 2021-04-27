@@ -11,7 +11,7 @@ const messagesTable = base('Messages')
 const programsTable = base('Projects')
 
 const allAttrsFormula = (attrs) =>
-  ['AND(', Object.entries(attrs).map(([k, v]) => `${k}='${v}'`), ')'].join('')
+  ['AND(', Object.entries(attrs).map(([k, v]) => `${k}="${v}"`), ')'].join('')
 
 export const searchMessages = async (term: string) => {
   const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
@@ -56,7 +56,7 @@ export const orgDetails = async (recordID: string) => {
       'Notes',
       'EC-contact-info',
       'EC-program-display',
-      'Grants',
+      'EC-grant-info',
     ],
     filterByFormula: `RECORD_ID()="${recordID}"`,
   }
@@ -77,7 +77,7 @@ export const findMessage = messagesTable.find
 export const updateMessage = messagesTable.update
 
 export const upsertMessage = async (attrs) => {
-  const searchFields = ['channelID', 'slackID', 'timestamp']
+  const searchFields = ['channelID', 'slackID', 'timestamp', 'text']
   const filterByFormula = allAttrsFormula(pick(attrs, searchFields))
   const searchParams = { maxRecords: 1, filterByFormula }
   let [message] = await messagesTable.select(searchParams).all()
