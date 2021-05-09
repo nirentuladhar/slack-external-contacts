@@ -181,15 +181,23 @@ const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
 ]
 
 const totalGrantsInAYear = (grants, year) => {
-  const amount = grants.map((grant) =>
-    grant.yearMonth.slice(0, 4) == year
-      ? parseInt((grant.codedAmounts.split(':')[1] || '').replace(/\D/g, '')) ||
-        0
-      : 0,
-  )
+  let amount
 
-  console.log('Amount', amount)
-  console.log(amount.reduce((a, b) => a + b, 0))
+  if (year == currentYear()) {
+    amount = grants.map((grant) =>
+      grant.yearMonth.slice(0, 4) == year
+        ? parseInt((grant.plannedAUD || '').replace(/\D/g, '')) || 0
+        : 0,
+    )
+  } else {
+    amount = grants.map((grant) =>
+      grant.yearMonth.slice(0, 4) == year
+        ? parseInt(
+            (grant.codedAmounts.split(':')[1] || '').replace(/\D/g, ''),
+          ) || 0
+        : 0,
+    )
+  }
 
   return toCurrency(
     amount.reduce((a, b) => a + b, 0),
