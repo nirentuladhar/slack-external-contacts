@@ -70,3 +70,5 @@ export const time = (timestamp) =>
   moment(timestamp).format('h:mm a on MMMM Do YYYY')
 
 export const date = (date) => moment(date).format('MMMM Do YYYY')
+
+export const currentYear = () => moment().year()

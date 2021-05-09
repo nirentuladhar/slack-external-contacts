@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './.env' })
 import 'reflect-metadata'
 import addOrganisationCommand from './apps/organisation-command'
 import addContactsCommand from './apps/contacts-command'

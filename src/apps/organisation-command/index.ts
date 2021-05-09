@@ -7,6 +7,7 @@ import {
   nameForContact,
   grantEmoji,
   date,
+  currentYear,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
 import { searchOrgs, orgDetails } from '../../lib/airtable'
@@ -53,7 +54,8 @@ export default function (app: App): void {
     console.log(grants)
     const organisationContacts = _.sortBy(contacts, 'lastName')
     const organisationGrants = _.sortBy(grants, 'yearMonth')
-    console.log(organisationGrants)
+    console.log('Organisation grants: ', organisationGrants)
+    console.log(currentYear())
     await respond({
       blocks: [
         {
@@ -99,6 +101,29 @@ export default function (app: App): void {
             text: 'Grants',
             emoji: true,
           },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*This year: ${totalGrantsInAYear(
+              organisationGrants,
+              currentYear(),
+            )}*`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*Last year: ${totalGrantsInAYear(
+              organisationGrants,
+              currentYear() - 1,
+            )}*`,
+          },
+        },
+        {
+          type: 'divider',
         },
       ]
         .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
@@ -155,6 +180,23 @@ const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
   },
 ]
 
+const totalGrantsInAYear = (grants, year) => {
+  const amount = grants.map((grant) =>
+    grant.yearMonth.slice(0, 4) == year
+      ? parseInt((grant.codedAmounts.split(':')[1] || '').replace(/\D/g, '')) ||
+        0
+      : 0,
+  )
+
+  console.log('Amount', amount)
+  console.log(amount.reduce((a, b) => a + b, 0))
+
+  return toCurrency(
+    amount.reduce((a, b) => a + b, 0),
+    'AUD',
+  )
+}
+
 const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
   {
     type: 'section',
@@ -194,3 +236,7 @@ const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
 // last year: grant w/ hyperlink & AUD equiv & USD equiv
 
 // (grant agreement purpose)
+
+// total grants:
+// this year:
+// last year:
