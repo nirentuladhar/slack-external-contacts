@@ -10,7 +10,7 @@ import {
   currentYear,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
-import { searchOrgs, orgDetails } from '../../lib/airtable'
+import { searchOrgs, orgDetails, fxRates } from '../../lib/airtable'
 
 export default function (app: App): void {
   app.command('/org', async ({ command, ack, respond }) => {
@@ -94,39 +94,63 @@ export default function (app: App): void {
         {
           type: 'divider',
         },
-        {
-          type: 'header',
-          text: {
-            type: 'plain_text',
-            text: 'Grants',
-            emoji: true,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*This year: ${totalGrantsInAYear(
-              organisationGrants,
-              currentYear(),
-            )}*`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Last year: ${totalGrantsInAYear(
-              organisationGrants,
-              currentYear() - 1,
-            )}*`,
-          },
-        },
-        {
-          type: 'divider',
-        },
       ]
-        .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
+        .concat([
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: 'Grant Summary',
+              emoji: true,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*This year: ${totalGrantsInAYear(
+                organisationGrants,
+                currentYear(),
+              )}*`,
+            },
+          },
+        ])
+        .concat(
+          orEmptyRow(
+            _.flatten(
+              organisationGrantsByYear(organisationGrants, currentYear()).map(
+                grantCard,
+              ),
+            ),
+          ),
+        )
+        .concat([
+          {
+            type: 'divider',
+          },
+        ])
+        .concat([
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Last year: ${totalGrantsInAYear(
+                organisationGrants,
+                currentYear() - 1,
+              )}*`,
+            },
+          },
+        ])
+        .concat(
+          orEmptyRow(
+            _.flatten(
+              organisationGrantsByYear(
+                organisationGrants,
+                currentYear() - 1,
+              ).map(grantCard),
+            ),
+          ),
+        )
         .concat([
           {
             type: 'divider',
@@ -144,6 +168,10 @@ export default function (app: App): void {
         .concat(footnote),
     })
   })
+}
+
+const organisationGrantsByYear = (grants, year) => {
+  return grants.filter((grant) => grant.yearMonth.slice(0, 4) == year)
 }
 
 const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
@@ -222,7 +250,9 @@ const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
       // },
       {
         type: 'mrkdwn',
-        text: `*Amount:* ${plannedAUD} (${codedAmounts})`,
+        text: `*Amount:* ${plannedAmount(plannedAUD)} ${codedAmount(
+          codedAmounts,
+        )}`,
       },
       {
         type: 'mrkdwn',
@@ -235,6 +265,22 @@ const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
     ],
   },
 ]
+
+const plannedAmount = async (aud) => {
+  if (aud == 0) return ''
+  const amt = (parseInt(aud.replace(/\D/g, '')) || 0) * 1.33
+
+  return `${aud}(${toCurrency(amt, 'usd')})`
+}
+
+const codedAmount = (amt) => {
+  if (amt == '') return ''
+
+  const _amt =
+    parseInt((amt.split(':')[1] || '').replace(/\D/g, '')) || 0 * 1.33
+
+  return `${amt}(${toCurrency(_amt, 'usd')})`
+}
 
 // link to partner record in stacker
 // grant summary:

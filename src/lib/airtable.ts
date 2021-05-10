@@ -9,6 +9,7 @@ const orgTable = base('Partner Organisations')
 const contactsTable = base('Contacts')
 const messagesTable = base('Messages')
 const programsTable = base('Projects')
+const fxTable = base('FX Rates')
 
 const allAttrsFormula = (attrs) =>
   ['AND(', Object.entries(attrs).map(([k, v]) => `${k}="${v}"`), ')'].join('')
@@ -62,6 +63,15 @@ export const orgDetails = async (recordID: string) => {
   }
   const records = await orgTable.select(params).all() // .find() doesn't allow specifiying fields
   return (records || []).map((r) => r.fields)[0]
+}
+
+export const fxRates = async () => {
+  const params = {
+    view: 'Grid view',
+    fields: ['Currency', 'FX Rate (AUD)', 'FX Rate (USD)'],
+  }
+  const records = await fxTable.select(params).all() // .find() doesn't allow specifiying fields
+  return (records || []).map((r) => r.fields)[0]['FX Rate (USD)']
 }
 
 export const allPrograms = async () => {

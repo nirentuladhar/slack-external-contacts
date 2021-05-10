@@ -62,7 +62,7 @@ export const toCurrency = (field, currency) => {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: currency || 'AUD',
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
   }).format(field)
 }
 
