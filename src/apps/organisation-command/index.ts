@@ -46,6 +46,9 @@ export default function (app: App): void {
       const [firstName, lastName, email, phone, role, notes] = info.split('|')
       return { firstName, lastName, email, phone, role, notes }
     })
+    const stackerURL =
+      'https://granttracker.sunriseproject.org.au/partner-organisations2/view/po2_' +
+      organisation['RECORD_ID']
     console.log(organisation['EC-grant-info'])
     const grants = (organisation['EC-grant-info'] || []).map((info) => {
       const [yearMonth, grant, url, codedAmounts, plannedAUD] = info.split('|')
@@ -72,6 +75,10 @@ export default function (app: App): void {
         {
           type: 'section',
           fields: [
+            {
+              type: 'mrkdwn',
+              text: `*Stacker:*\n<${stackerURL}|${organisation['EC-display']}>`,
+            },
             {
               type: 'mrkdwn',
               text: `*Website:*\n${valueOrFallback(organisation['Website'])}`,
@@ -227,10 +234,9 @@ const totalGrantsInAYear = (grants, year) => {
     )
   }
 
-  return toCurrency(
-    amount.reduce((a, b) => a + b, 0),
-    'AUD',
-  )
+  const aud = amount.reduce((a, b) => a + b, 0)
+
+  return `${toCurrency(aud, 'aud')}(${toCurrency(aud, 'usd')})`
 }
 
 const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
@@ -266,7 +272,7 @@ const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
   },
 ]
 
-const plannedAmount = async (aud) => {
+const plannedAmount = (aud) => {
   if (aud == 0) return ''
   const amt = (parseInt(aud.replace(/\D/g, '')) || 0) * 1.33
 
