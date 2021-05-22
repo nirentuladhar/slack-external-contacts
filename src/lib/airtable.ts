@@ -17,8 +17,8 @@ const allAttrsFormula = (attrs) =>
 export const searchMessages = async (term: string) => {
   const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
   const params = {
-    fields: ['text', 'createdAt', 'slackID', 'contactsList'],
-    sort: [{ field: 'createdAt', direction: 'desc' }],
+    fields: ['text', 'timestamp', 'slackID', 'contactsList'],
+    sort: [{ field: 'timestamp', direction: 'desc' }],
     filterByFormula: `REGEX_MATCH(LOWER({EC-search-index}), LOWER('.*${sanitisedTerm}.*'))`,
   }
   const records = await messagesTable.select(params).all()

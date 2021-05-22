@@ -1,6 +1,6 @@
 import { _ } from 'lodash'
 import { App } from '@slack/bolt'
-import { time } from '../../helpers/format'
+import { time, unixTime } from '../../helpers/format'
 import { footnote } from '../../helpers/blocks'
 import { searchMessages } from '../../lib/airtable'
 
@@ -49,8 +49,8 @@ export default function (app: App): void {
                   type: 'mrkdwn',
                   text: `:speech_balloon: <@${
                     message.slackID
-                  }> referenced ${contactsDisplay(message)} at ${time(
-                    message.createdAt,
+                  }> referenced ${contactsDisplay(message)} at ${unixTime(
+                    message.timestamp,
                   )}:`,
                 },
               },
