@@ -43,22 +43,27 @@ export default function (app: App): void {
 
     const organisation = await orgDetails(matchingOrganisations[0].RECORD_ID)
     const contacts = (organisation['EC-contact-info'] || []).map((info) => {
-      const [firstName, lastName, email, phone, role, notes] = info.split('|')
-      return { firstName, lastName, email, phone, role, notes }
+      const [id, firstName, lastName, email, phone, role, notes] = info.split(
+        '|',
+      )
+      return { id, firstName, lastName, email, phone, role, notes }
     })
     const stackerURL =
       'https://granttracker.sunriseproject.org.au/partner-organisations2/view/po2_' +
       organisation['RECORD_ID']
-    console.log(organisation['EC-grant-info'])
+    // console.log(organisation['EC-grant-info'])
     const grants = (organisation['EC-grant-info'] || []).map((info) => {
       const [yearMonth, grant, url, codedAmounts, plannedAUD] = info.split('|')
       return { yearMonth, grant, url, codedAmounts, plannedAUD }
     })
-    console.log(grants)
+    // console.log(grants)
     const organisationContacts = _.sortBy(contacts, 'lastName')
     const organisationGrants = _.sortBy(grants, 'yearMonth')
-    console.log('Organisation grants: ', organisationGrants)
-    console.log(currentYear())
+    // console.log('Organisation grants: ', organisationGrants)
+    // console.log(currentYear())
+
+    console.log(contacts)
+
     await respond({
       blocks: [
         {
@@ -77,7 +82,7 @@ export default function (app: App): void {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Stacker:*\n<${stackerURL}|${organisation['EC-display']}>`,
+              text: `*GrantsTracker profile:*\n<${stackerURL}|${organisation['EC-display']}>`,
             },
             {
               type: 'mrkdwn',
@@ -181,39 +186,58 @@ const organisationGrantsByYear = (grants, year) => {
   return grants.filter((grant) => grant.yearMonth.slice(0, 4) == year)
 }
 
-const contactCard = ({ firstName, lastName, email, phone, role, notes }) => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `:bust_in_silhouette: *${firstName} ${lastName}*`,
+const contactCard = ({
+  id,
+  firstName,
+  lastName,
+  email,
+  phone,
+  role,
+  notes,
+}) => {
+  const stackerURL =
+    'https://granttracker.sunriseproject.org.au/contacts/view/con_' + id
+
+  console.log(id)
+
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:bust_in_silhouette: *${firstName} ${lastName}*`,
+      },
     },
-  },
-  {
-    type: 'section',
-    fields: [
-      {
-        type: 'mrkdwn',
-        text: `*Email:* ${valueOrFallback(email)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Phone:* ${valueOrFallback(phone)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Role:* ${valueOrFallback(role)}`,
-      },
-    ],
-  },
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `*Notes:*\n${valueOrFallback(notes)}`,
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `*Email:* ${valueOrFallback(email)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Phone:* ${valueOrFallback(phone)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Role:* ${valueOrFallback(role)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `<${stackerURL}|GrantsTracker profile>`,
+        },
+      ],
     },
-  },
-]
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*Notes:*\n${valueOrFallback(notes)}`,
+      },
+    },
+  ]
+}
 
 const totalGrantsInAYear = (grants, year) => {
   let amount
