@@ -35,14 +35,18 @@ export const searchContacts = async (term: string) => {
   return contactsTable.select(params).all()
 }
 
-export const searchOrgs = async (term: string) => {
+export const getOrgs = async (term: string) => {
   const sanitisedTerm = (term || '').replace(/^'"/, '').replace(/'"$/, '')
   const params = {
     view: 'Slack External Contacts filter',
     fields: ['RECORD_ID', 'EC-display'],
     filterByFormula: `REGEX_MATCH(LOWER({EC-display}), '.*' & LOWER("${sanitisedTerm}") & '.*')`,
   }
-  const records = await orgTable.select(params).all()
+  return orgTable.select(params).all()
+}
+
+export const searchOrgs = async (term: string) => {
+  const records = await getOrgs(term)
   return records.map((r) => r.fields)
 }
 

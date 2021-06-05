@@ -21,6 +21,7 @@ import {
   allPrograms,
   createContact,
   createOrg,
+  getOrgs,
 } from '../../lib/airtable'
 
 export default function (app: App): void {
@@ -48,7 +49,7 @@ export default function (app: App): void {
 
   app.options('organisation_select', async ({ options, ack }) => {
     logger('options-organisation_select')
-    const matchingOrgs = await searchOrgs(options.value)
+    const matchingOrgs = await getOrgs(options.value)
     await ack({ options: matchingOrgs.map(optionForNewOrg) })
   })
 
