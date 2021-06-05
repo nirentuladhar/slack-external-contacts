@@ -29,7 +29,7 @@ export const searchContacts = async (term: string) => {
   const sanitisedTerm = (term || '').replace(/[^\w ]/g, '')
   const params = {
     view: 'Slack External Contacts filter',
-    fields: ['RECORD_ID', 'EC-display'],
+    fields: ['RECORD_ID', 'EC-display', 'EC-contact-info'],
     filterByFormula: `REGEX_MATCH(LOWER({EC-display}), LOWER('.*${sanitisedTerm}.*'))`,
   }
   return contactsTable.select(params).all()
@@ -97,3 +97,6 @@ export const upsertMessage = async (attrs) => {
 
 export const createContact = contactsTable.create
 export const createOrg = orgTable.create
+
+export const getStackerContactUrl = (id) =>
+  'https://granttracker.sunriseproject.org.au/contacts/view/con_' + id

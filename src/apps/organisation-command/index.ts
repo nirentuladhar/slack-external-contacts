@@ -10,7 +10,12 @@ import {
   currentYear,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
-import { searchOrgs, orgDetails, fxRates } from '../../lib/airtable'
+import {
+  searchOrgs,
+  orgDetails,
+  fxRates,
+  getStackerContactUrl,
+} from '../../lib/airtable'
 
 export default function (app: App): void {
   app.command('/org', async ({ command, ack, respond }) => {
@@ -195,11 +200,6 @@ const contactCard = ({
   role,
   notes,
 }) => {
-  const stackerURL =
-    'https://granttracker.sunriseproject.org.au/contacts/view/con_' + id
-
-  console.log(id)
-
   return [
     {
       type: 'section',
@@ -225,7 +225,7 @@ const contactCard = ({
         },
         {
           type: 'mrkdwn',
-          text: `<${stackerURL}|GrantsTracker profile>`,
+          text: `<${getStackerContactUrl(id)}|GrantsTracker profile>`,
         },
       ],
     },
