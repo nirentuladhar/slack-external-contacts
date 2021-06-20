@@ -85,3 +85,5 @@ export const searchContacts = async (term: string) => {
   }
   return contactsTable.select(params).all()
 }
+
+export const createOrg = orgTable.create
