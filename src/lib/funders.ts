@@ -35,10 +35,10 @@ export const orgDetails = async (recordID: string) => {
       'RECORD_ID',
       'EC-display',
       'Website',
-      'Notes',
+      // 'Notes',
       'EC-contact-info',
-      'EC-program-display',
-      'EC-grant-info',
+      // 'EC-program-display',
+      // 'EC-grant-info',
     ],
     filterByFormula: `RECORD_ID()="${recordID}"`,
   }

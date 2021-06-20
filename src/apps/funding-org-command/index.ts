@@ -53,6 +53,8 @@ export default function (app: App): void {
       return
     }
 
+    console.log(matchingOrganisations)
+
     const organisation = await orgDetails(matchingOrganisations[0].RECORD_ID)
     const contacts = (organisation['EC-contact-info'] || []).map((info) => {
       const [id, firstName, lastName, email, phone, role, notes] = info.split(
@@ -94,87 +96,28 @@ export default function (app: App): void {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*GrantsTracker profile:*\n<${stackerURL}|${organisation['EC-display']}>`,
+              text: `*GrantsTracker profile:*\n${organisation['EC-display']}`,
             },
             {
               type: 'mrkdwn',
               text: `*Website:*\n${valueOrFallback(organisation['Website'])}`,
             },
-            {
-              type: 'mrkdwn',
-              text: `*Program areas:*\n${valueOrFallback(
-                (organisation['EC-program-display'] || []).sort().join(', '),
-              )}`,
-            },
+            // {
+            //   type: 'mrkdwn',
+            //   text: `*Program areas:*\n${valueOrFallback(
+            //     (organisation['EC-program-display'] || []).sort().join(', '),
+            //   )}`,
+            // },
           ],
         },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Notes:*\n${valueOrFallback(organisation['Notes'])}`,
-          },
-        },
-        {
-          type: 'divider',
-        },
+        // {
+        //   type: 'section',
+        //   text: {
+        //     type: 'mrkdwn',
+        //     text: `*Notes:*\n${valueOrFallback(organisation['Notes'])}`,
+        //   },
+        // },
       ]
-        .concat([
-          {
-            type: 'header',
-            text: {
-              type: 'plain_text',
-              text: 'Grant Summary',
-              emoji: true,
-            },
-          },
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `*This year: ${totalGrantsInAYear(
-                organisationGrants,
-                currentYear(),
-              )}*`,
-            },
-          },
-        ])
-        .concat(
-          orEmptyRow(
-            _.flatten(
-              organisationGrantsByYear(organisationGrants, currentYear()).map(
-                grantCard,
-              ),
-            ),
-          ),
-        )
-        .concat([
-          {
-            type: 'divider',
-          },
-        ])
-        .concat([
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `*Last year: ${totalGrantsInAYear(
-                organisationGrants,
-                currentYear() - 1,
-              )}*`,
-            },
-          },
-        ])
-        .concat(
-          orEmptyRow(
-            _.flatten(
-              organisationGrantsByYear(
-                organisationGrants,
-                currentYear() - 1,
-              ).map(grantCard),
-            ),
-          ),
-        )
         .concat([
           {
             type: 'divider',
@@ -192,10 +135,6 @@ export default function (app: App): void {
         .concat(footnote),
     })
   })
-}
-
-const organisationGrantsByYear = (grants, year) => {
-  return grants.filter((grant) => grant.yearMonth.slice(0, 4) == year)
 }
 
 const contactCard = ({
@@ -244,77 +183,4 @@ const contactCard = ({
       },
     },
   ]
-}
-
-const totalGrantsInAYear = (grants, year) => {
-  let amount
-
-  if (year == currentYear()) {
-    amount = grants.map((grant) =>
-      grant.yearMonth.slice(0, 4) == year
-        ? parseInt((grant.plannedAUD || '').replace(/\D/g, '')) || 0
-        : 0,
-    )
-  } else {
-    amount = grants.map((grant) =>
-      grant.yearMonth.slice(0, 4) == year
-        ? parseInt(
-            (grant.codedAmounts.split(':')[1] || '').replace(/\D/g, ''),
-          ) || 0
-        : 0,
-    )
-  }
-
-  const aud = amount.reduce((a, b) => a + b, 0)
-
-  return `${toCurrency(aud, 'aud')}(${toCurrency(aud, 'usd')})`
-}
-
-const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `<${url}|${grant}>`,
-    },
-  },
-  {
-    type: 'section',
-    fields: [
-      // {
-      //   type: 'mrkdwn',
-      //   text: `*Status:* ${valueOrFallback(grant.status)}`,
-      // },
-      {
-        type: 'mrkdwn',
-        text: `*Amount:* ${plannedAmount(plannedAUD)} ${codedAmount(
-          codedAmounts,
-        )}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Granted date:* ${valueOrFallback(yearMonth)}`,
-      },
-      // {
-      //   type: 'mrkdwn',
-      //   text: `*Primary contact:* ${valueOrFallback()}`,
-      // },
-    ],
-  },
-]
-
-const plannedAmount = (aud) => {
-  if (aud == 0) return ''
-  const amt = (parseInt(aud.replace(/\D/g, '')) || 0) * 1.33
-
-  return `${aud}(${toCurrency(amt, 'usd')})`
-}
-
-const codedAmount = (amt) => {
-  if (amt == '') return ''
-
-  const _amt =
-    parseInt((amt.split(':')[1] || '').replace(/\D/g, '')) || 0 * 1.33
-
-  return `${amt}(${toCurrency(_amt, 'usd')})`
 }
