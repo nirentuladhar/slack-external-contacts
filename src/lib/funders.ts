@@ -87,3 +87,4 @@ export const searchContacts = async (term: string) => {
 }
 
 export const createOrg = orgTable.create
+export const createContact = contactsTable.create

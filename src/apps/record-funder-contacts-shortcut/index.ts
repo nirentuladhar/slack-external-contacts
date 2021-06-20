@@ -2,6 +2,7 @@ import { App } from '@slack/bolt'
 import {
   optionForExistingContact,
   optionForNewContact,
+  optionForNewOrg,
 } from '../../helpers/blocks'
 import {
   fieldSubmission,
@@ -15,6 +16,8 @@ import {
   searchContacts,
   hasPermission,
   createOrg,
+  createContact,
+  getOrgs,
 } from '../../lib/funders'
 import { compactSet, logger } from '../../lib/utils'
 
@@ -23,6 +26,12 @@ export default function (app: App): void {
     logger('options-funder_contact_select')
     const matchingContacts = await searchContacts(options.value)
     await ack({ options: matchingContacts.map(optionForNewContact) })
+  })
+
+  app.options('funding_organisation_select', async ({ options, ack }) => {
+    logger('options-organisation_select')
+    const matchingOrgs = await getOrgs(options.value)
+    await ack({ options: matchingOrgs.map(optionForNewOrg) })
   })
 
   app.action(
@@ -120,6 +129,131 @@ export default function (app: App): void {
     },
   )
 
+  app.action('add_funder_contact', async ({ body, context, ack, client }) => {
+    logger('action-add_funder_contact')
+    await ack()
+
+    await client.views.push({
+      trigger_id: body['trigger_id'],
+      token: context.botToken,
+      view: {
+        type: 'modal',
+        callback_id: 'create_funder_contact',
+        title: { type: 'plain_text', text: 'Create external contact' },
+        close: {
+          type: 'plain_text',
+          text: 'Cancel',
+        },
+        private_metadata: body['view']['private_metadata'],
+        submit: {
+          type: 'plain_text',
+          text: 'Save',
+        },
+        blocks: [
+          {
+            type: 'input',
+            block_id: 'contact-org',
+            label: {
+              type: 'plain_text',
+              text: 'Partner Organisation',
+            },
+            hint: {
+              type: 'plain_text',
+              text:
+                'If you cannot find the organisation, click cancel and add the organisation first',
+            },
+            element: {
+              action_id: 'funding_organisation_select',
+              type: 'multi_external_select',
+              placeholder: {
+                type: 'plain_text',
+                text: 'Search organisation',
+                emoji: true,
+              },
+              min_query_length: 3,
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'contact-first-name',
+            label: {
+              type: 'plain_text',
+              text: 'First Name',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'first-name-value',
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'contact-last-name',
+            label: {
+              type: 'plain_text',
+              text: 'Last Name',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'last-name-value',
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'contact-role',
+            label: {
+              type: 'plain_text',
+              text: 'Role / title',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'role-value',
+            },
+            optional: true,
+          },
+          {
+            type: 'input',
+            block_id: 'contact-email',
+            label: {
+              type: 'plain_text',
+              text: 'Email',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'email-value',
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'contact-phone',
+            label: {
+              type: 'plain_text',
+              text: 'Ph. number',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'phone-value',
+            },
+            optional: true,
+          },
+          {
+            type: 'input',
+            block_id: 'contact-notes',
+            label: {
+              type: 'plain_text',
+              text: 'Additional Notes',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'notes-value',
+              multiline: true,
+            },
+            optional: true,
+          },
+        ],
+      },
+    })
+  })
+
   app.view('create_funding_organisation', async ({ ack, view }) => {
     logger('view-create_funding_organisation')
     await ack()
@@ -145,6 +279,33 @@ export default function (app: App): void {
       `background-value`,
     )
     await createOrg(organisation)
+  })
+
+  app.view('create_funder_contact', async ({ ack, view }) => {
+    logger('view-create_funder_contact')
+    await ack()
+
+    const values = view['state']['values']
+
+    const contact = {}
+    contact['First Name'] = fieldSubmission(
+      values['contact-first-name'],
+      'first-name-value',
+    )
+    contact['Last Name'] = fieldSubmission(
+      values['contact-last-name'],
+      'last-name-value',
+    )
+    contact['Email'] = fieldSubmission(values['contact-email'], 'email-value')
+    contact['Phone'] = fieldSubmission(values['contact-phone'], 'phone-value')
+    contact['Role'] = fieldSubmission(values['contact-role'], 'role-value')
+    contact['Notes'] = fieldSubmission(values['contact-notes'], 'notes-value')
+    contact['Funding organisations'] = multiSelectSubmission(
+      values['contact-org'],
+      'funding_organisation_select',
+    )
+
+    await createContact(contact)
   })
 
   app.shortcut(
@@ -238,16 +399,16 @@ export default function (app: App): void {
                   },
                   value: 'add_funding_organisation',
                 },
-                // {
-                //   action_id: 'add_funder_contact',
-                //   type: 'button',
-                //   text: {
-                //     type: 'plain_text',
-                //     text: 'Add new contact',
-                //     emoji: true,
-                //   },
-                //   value: 'add_contact',
-                // },
+                {
+                  action_id: 'add_funder_contact',
+                  type: 'button',
+                  text: {
+                    type: 'plain_text',
+                    text: 'Add new contact',
+                    emoji: true,
+                  },
+                  value: 'add_funder_contact',
+                },
               ],
             },
           ],
