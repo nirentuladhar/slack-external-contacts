@@ -96,27 +96,10 @@ export default function (app: App): void {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*GrantsTracker profile:*\n${organisation['EC-display']}`,
+              text: `*Website:* ${valueOrFallback(organisation['Website'])}`,
             },
-            {
-              type: 'mrkdwn',
-              text: `*Website:*\n${valueOrFallback(organisation['Website'])}`,
-            },
-            // {
-            //   type: 'mrkdwn',
-            //   text: `*Program areas:*\n${valueOrFallback(
-            //     (organisation['EC-program-display'] || []).sort().join(', '),
-            //   )}`,
-            // },
           ],
         },
-        // {
-        //   type: 'section',
-        //   text: {
-        //     type: 'mrkdwn',
-        //     text: `*Notes:*\n${valueOrFallback(organisation['Notes'])}`,
-        //   },
-        // },
       ]
         .concat([
           {
@@ -168,10 +151,6 @@ const contactCard = ({
         {
           type: 'mrkdwn',
           text: `*Role:* ${valueOrFallback(role)}`,
-        },
-        {
-          type: 'mrkdwn',
-          text: `<$|GrantsTracker profile>`,
         },
       ],
     },
