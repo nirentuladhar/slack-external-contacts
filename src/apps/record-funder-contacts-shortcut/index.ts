@@ -28,6 +28,17 @@ export default function (app: App): void {
     await ack({ options: matchingContacts.map(optionForNewContact) })
   })
 
+  app.action('funder_contact_select', async ({ action, body, ack }) => {
+    logger('action-funder_contact_select')
+    await ack()
+    const selectedValues = action['selected_options'].map((o) => o.value)
+    const message = await findMessage(body['view'].private_metadata)
+    const contacts = selectedValues.length
+      ? compactSet(selectedValues, message.fields.contacts)
+      : []
+    await updateMessage(message.id, { contacts })
+  })
+
   app.options('funding_organisation_select', async ({ options, ack }) => {
     logger('options-organisation_select')
     const matchingOrgs = await getOrgs(options.value)
@@ -308,6 +319,30 @@ export default function (app: App): void {
     await createContact(contact)
   })
 
+  app.view('update_funding_contact', async ({ ack, body, context }) => {
+    logger('view-update_funding_contact')
+    await ack()
+    // The contact selection is not actually saved here but we'll give the user feedback now.
+    const { fields } = await findMessage(body['view'].private_metadata)
+
+    const feedback =
+      fields.contacts && fields.contacts.length
+        ? `The slack message has been successfully associated with ${fields.contactsList}.`
+        : 'Slack message has been updated with no associated contacts.'
+
+    try {
+      await app.client.chat.postMessage({
+        text: feedback,
+        token: context.botToken,
+        channel: fields.channelID,
+        thread_ts: fields.timestamp,
+      })
+    } catch (error) {
+      // the bot itself needs to be added to the channel
+      if (!error.message.match(/channel_not_found|not_in_channel/)) throw error
+    }
+  })
+
   app.shortcut(
     'record_funder_contact',
     async ({ shortcut, ack, context, client }) => {
@@ -356,7 +391,7 @@ export default function (app: App): void {
         trigger_id: shortcut.trigger_id,
         view: {
           type: 'modal',
-          callback_id: 'update_contact',
+          callback_id: 'update_funding_contact',
           title: { type: 'plain_text', text: 'Record external contact' },
           close: {
             type: 'plain_text',
