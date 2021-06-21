@@ -1,4 +1,4 @@
-import * as moment from 'moment'
+import moment from 'moment'
 import { _ } from 'lodash'
 
 export const nameForContact = (contact) =>
@@ -62,11 +62,16 @@ export const toCurrency = (field, currency) => {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: currency || 'AUD',
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
   }).format(field)
 }
 
 export const time = (timestamp) =>
   moment(timestamp).format('h:mm a on MMMM Do YYYY')
 
+export const unixTime = (timestamp) =>
+  moment.unix(timestamp).format('h:mm a on MMMM Do YYYY')
+
 export const date = (date) => moment(date).format('MMMM Do YYYY')
+
+export const currentYear = () => moment().year()

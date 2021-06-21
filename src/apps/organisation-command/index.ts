@@ -1,39 +1,34 @@
 import { _ } from 'lodash'
 import { App } from '@slack/bolt'
 import {
-  formattedOrganisationNameWithAbbrev,
   toCurrency,
   valueOrFallback,
   functionOrFallback,
   nameForContact,
   grantEmoji,
-  programsForContact,
-  primaryContactEmoji,
   date,
+  currentYear,
 } from '../../helpers/format'
 import { footnote, orEmptyRow } from '../../helpers/blocks'
+import {
+  searchOrgs,
+  orgDetails,
+  fxRates,
+  getStackerContactUrl,
+} from '../../lib/airtable'
 
-export default function (app: App, { organisationRepository }) {
+export default function (app: App): void {
   app.command('/org', async ({ command, ack, respond }) => {
     await ack()
     if (!command.text) {
       await respond(
-        'Please specify text to search organisation names with with e.g. `/organisations Sunrise`',
+        'Please specify text to search organisation names with e.g. `/org Sunrise`',
       )
       return
     }
-    const matchingOrganisations = await organisationRepository
-      .createQueryBuilder('organisation')
-      .leftJoinAndSelect('organisation.programs', 'program')
-      .leftJoinAndSelect('organisation.contacts', 'contact')
-      .leftJoinAndSelect('contact.programs', 'contact_program')
-      .leftJoinAndSelect('organisation.grants', 'grant')
-      .leftJoinAndSelect('grant.contact', 'contact_grant')
-      .where(
-        'organisation.name ~* :value or organisation.abbreviation ~* :value',
-        { value: command.text },
-      )
-      .getMany()
+
+    const matchingOrganisations = await searchOrgs(command.text)
+    // console.log(matchingOrganisations)
     if (!matchingOrganisations.length) {
       await respond(
         `No organisation details matched the text: \`${command.text}\``,
@@ -43,23 +38,44 @@ export default function (app: App, { organisationRepository }) {
     if (matchingOrganisations.length > 1) {
       await respond(
         `${matchingOrganisations
-          .map((o) => `*${o.name}*`)
-          .join(' and ')} both matched the text: \`${
+          .map((o) => `*${o['EC-display']}*`)
+          .join(' and ')} matched the text: \`${
           command.text
         }\`. Please make it more specific.`,
       )
       return
     }
-    const organisation = matchingOrganisations[0]
-    const organisationContacts = _.sortBy(organisation.contacts, 'lastName')
-    const organisationGrants = _.sortBy(organisation.grants, 'startedAt')
+
+    const organisation = await orgDetails(matchingOrganisations[0].RECORD_ID)
+    const contacts = (organisation['EC-contact-info'] || []).map((info) => {
+      const [id, firstName, lastName, email, phone, role, notes] = info.split(
+        '|',
+      )
+      return { id, firstName, lastName, email, phone, role, notes }
+    })
+    const stackerURL =
+      'https://granttracker.sunriseproject.org.au/partner-organisations2/view/po2_' +
+      organisation['RECORD_ID']
+    // console.log(organisation['EC-grant-info'])
+    const grants = (organisation['EC-grant-info'] || []).map((info) => {
+      const [yearMonth, grant, url, codedAmounts, plannedAUD] = info.split('|')
+      return { yearMonth, grant, url, codedAmounts, plannedAUD }
+    })
+    // console.log(grants)
+    const organisationContacts = _.sortBy(contacts, 'lastName')
+    const organisationGrants = _.sortBy(grants, 'yearMonth')
+    // console.log('Organisation grants: ', organisationGrants)
+    // console.log(currentYear())
+
+    console.log(contacts)
+
     await respond({
       blocks: [
         {
           type: 'header',
           text: {
             type: 'plain_text',
-            text: formattedOrganisationNameWithAbbrev(organisation),
+            text: organisation['EC-display'],
             emoji: true,
           },
         },
@@ -71,15 +87,16 @@ export default function (app: App, { organisationRepository }) {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Website:*\n${valueOrFallback(organisation.website)}`,
+              text: `*GrantsTracker profile:*\n<${stackerURL}|${organisation['EC-display']}>`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Website:*\n${valueOrFallback(organisation['Website'])}`,
             },
             {
               type: 'mrkdwn',
               text: `*Program areas:*\n${valueOrFallback(
-                organisation.programs
-                  .map((p) => p.name)
-                  .sort()
-                  .join(', '),
+                (organisation['EC-program-display'] || []).sort().join(', '),
               )}`,
             },
           ],
@@ -88,22 +105,69 @@ export default function (app: App, { organisationRepository }) {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*Notes:*\n${valueOrFallback(organisation.notes)}`,
+            text: `*Notes:*\n${valueOrFallback(organisation['Notes'])}`,
           },
         },
         {
           type: 'divider',
         },
-        {
-          type: 'header',
-          text: {
-            type: 'plain_text',
-            text: 'Grants',
-            emoji: true,
-          },
-        },
       ]
-        .concat(orEmptyRow(_.flatten(organisationGrants.map(grantCard))))
+        .concat([
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: 'Grant Summary',
+              emoji: true,
+            },
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*This year: ${totalGrantsInAYear(
+                organisationGrants,
+                currentYear(),
+              )}*`,
+            },
+          },
+        ])
+        .concat(
+          orEmptyRow(
+            _.flatten(
+              organisationGrantsByYear(organisationGrants, currentYear()).map(
+                grantCard,
+              ),
+            ),
+          ),
+        )
+        .concat([
+          {
+            type: 'divider',
+          },
+        ])
+        .concat([
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Last year: ${totalGrantsInAYear(
+                organisationGrants,
+                currentYear() - 1,
+              )}*`,
+            },
+          },
+        ])
+        .concat(
+          orEmptyRow(
+            _.flatten(
+              organisationGrantsByYear(
+                organisationGrants,
+                currentYear() - 1,
+              ).map(grantCard),
+            ),
+          ),
+        )
         .concat([
           {
             type: 'divider',
@@ -123,80 +187,140 @@ export default function (app: App, { organisationRepository }) {
   })
 }
 
-const contactCard = (contact) => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `:bust_in_silhouette: ${primaryContactEmoji(
-        contact,
-      )}*${nameForContact(contact)}*`,
-    },
-  },
-  {
-    type: 'section',
-    fields: [
-      {
-        type: 'mrkdwn',
-        text: `*Primary contact for:* ${programsForContact(contact)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Email:* ${valueOrFallback(contact.email)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Phone:* ${valueOrFallback(contact.phone)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Role:* ${valueOrFallback(contact.role)}`,
-      },
-    ],
-  },
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `*Notes:*\n${valueOrFallback(contact.notes)}`,
-    },
-  },
-]
+const organisationGrantsByYear = (grants, year) => {
+  return grants.filter((grant) => grant.yearMonth.slice(0, 4) == year)
+}
 
-const grantCard = (grant) => [
+const contactCard = ({
+  id,
+  firstName,
+  lastName,
+  email,
+  phone,
+  role,
+  notes,
+}) => {
+  return [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:bust_in_silhouette: *${firstName} ${lastName}*`,
+      },
+    },
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `*Email:* ${valueOrFallback(email)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Phone:* ${valueOrFallback(phone)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `*Role:* ${valueOrFallback(role)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `<${getStackerContactUrl(id)}|GrantsTracker profile>`,
+        },
+      ],
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*Notes:*\n${valueOrFallback(notes)}`,
+      },
+    },
+  ]
+}
+
+const totalGrantsInAYear = (grants, year) => {
+  let amount
+
+  if (year == currentYear()) {
+    amount = grants.map((grant) =>
+      grant.yearMonth.slice(0, 4) == year
+        ? parseInt((grant.plannedAUD || '').replace(/\D/g, '')) || 0
+        : 0,
+    )
+  } else {
+    amount = grants.map((grant) =>
+      grant.yearMonth.slice(0, 4) == year
+        ? parseInt(
+            (grant.codedAmounts.split(':')[1] || '').replace(/\D/g, ''),
+          ) || 0
+        : 0,
+    )
+  }
+
+  const aud = amount.reduce((a, b) => a + b, 0)
+
+  return `${toCurrency(aud, 'aud')}(${toCurrency(aud, 'usd')})`
+}
+
+const grantCard = ({ yearMonth, grant, url, codedAmounts, plannedAUD }) => [
   {
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `${grantEmoji(grant)} *${grant.proposal}*`,
+      text: `<${url}|${grant}>`,
     },
   },
   {
     type: 'section',
     fields: [
+      // {
+      //   type: 'mrkdwn',
+      //   text: `*Status:* ${valueOrFallback(grant.status)}`,
+      // },
       {
         type: 'mrkdwn',
-        text: `*Status:* ${valueOrFallback(grant.status)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Amount:* ${toCurrency(grant.amount, grant.ccy)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Granted date:* ${functionOrFallback(grant.startedAt, date)}`,
-      },
-      {
-        type: 'mrkdwn',
-        text: `*Primary contact:* ${functionOrFallback(
-          grant.contact,
-          nameForContact,
+        text: `*Amount:* ${plannedAmount(plannedAUD)} ${codedAmount(
+          codedAmounts,
         )}`,
       },
       {
         type: 'mrkdwn',
-        text: `*Code:* ${valueOrFallback(grant.project_code)}`,
+        text: `*Granted date:* ${valueOrFallback(yearMonth)}`,
       },
+      // {
+      //   type: 'mrkdwn',
+      //   text: `*Primary contact:* ${valueOrFallback()}`,
+      // },
     ],
   },
 ]
+
+const plannedAmount = (aud) => {
+  if (aud == 0) return ''
+  const amt = (parseInt(aud.replace(/\D/g, '')) || 0) * 1.33
+
+  return `${aud}(${toCurrency(amt, 'usd')})`
+}
+
+const codedAmount = (amt) => {
+  if (amt == '') return ''
+
+  const _amt =
+    parseInt((amt.split(':')[1] || '').replace(/\D/g, '')) || 0 * 1.33
+
+  return `${amt}(${toCurrency(_amt, 'usd')})`
+}
+
+// link to partner record in stacker
+// grant summary:
+// total grants: how much this year & how much last year
+// grant line items:
+// this year: grant w/ hyperlink & AUD equiv & USD equiv
+// last year: grant w/ hyperlink & AUD equiv & USD equiv
+
+// (grant agreement purpose)
+
+// total grants:
+// this year:
+// last year:
