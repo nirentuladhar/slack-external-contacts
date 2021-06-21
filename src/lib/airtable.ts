@@ -93,9 +93,12 @@ export const updateMessage = messagesTable.update
 export const upsertMessage = async (attrs) => {
   const searchFields = ['channelID', 'slackID', 'timestamp', 'text']
   const filterByFormula = allAttrsFormula(pick(attrs, searchFields))
-  const searchParams = { maxRecords: 1, filterByFormula }
-  let [message] = await messagesTable.select(searchParams).all()
-  if (!message) message = await messagesTable.create(attrs)
+
+  const message = await messagesTable.create(attrs)
+
+  // const searchParams = { maxRecords: 1, filterByFormula }
+  // let [message] = await messagesTable.select(searchParams).all()
+  // if (!message) message = await messagesTable.create(attrs)
   return message
 }
 
