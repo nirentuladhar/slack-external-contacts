@@ -53,7 +53,7 @@ export default function (app: App): void {
       return
     }
 
-    console.log(matchingOrganisations)
+    // console.log(matchingOrganisations)
 
     const organisation = await orgDetails(matchingOrganisations[0].RECORD_ID)
     const contacts = (organisation['EC-contact-info'] || []).map((info) => {
@@ -76,7 +76,21 @@ export default function (app: App): void {
     // console.log('Organisation grants: ', organisationGrants)
     // console.log(currentYear())
 
-    console.log(contacts)
+    const grantReports = (organisation['EC-grant-report-info'] || []).map(
+      (info) => {
+        const [
+          reportId,
+          grant,
+          reportStatus,
+          stackerLink,
+          dueDate,
+        ] = info.split('|')
+        return { reportId, grant, reportStatus, stackerLink, dueDate }
+      },
+    )
+    // console.log('Grant reports', grantReports)
+
+    // console.log(contacts)
 
     await respond({
       blocks: [
@@ -109,6 +123,26 @@ export default function (app: App): void {
           {
             type: 'divider',
           },
+        ])
+        .concat([
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: 'Grant Reports',
+              emoji: true,
+            },
+          },
+        ])
+        .concat(
+          orEmptyRow(
+            _.flatten(futureGrantReports(grantReports).map(grantCard)),
+          ),
+        )
+        .concat([
+          {
+            type: 'divider',
+          },
           {
             type: 'header',
             text: {
@@ -122,6 +156,10 @@ export default function (app: App): void {
         .concat(footnote),
     })
   })
+}
+
+const futureGrantReports = (grants) => {
+  return grants.filter((grant) => Date.parse(grant.dueDate) > Date.now())
 }
 
 const contactCard = ({
@@ -171,3 +209,26 @@ const contactCard = ({
     },
   ]
 }
+
+const grantCard = ({ reportId, grant, reportStatus, stackerLink, dueDate }) => [
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `<${stackerLink}|${reportId}>`,
+    },
+  },
+  {
+    type: 'section',
+    fields: [
+      {
+        type: 'mrkdwn',
+        text: `*Status:* ${valueOrFallback(reportStatus)}`,
+      },
+      {
+        type: 'mrkdwn',
+        text: `*Due date:* ${date(dueDate)}`,
+      },
+    ],
+  },
+]
