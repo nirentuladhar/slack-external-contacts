@@ -15,7 +15,7 @@ import {
   orgDetails,
   hasPermission,
   // fxRates,
-  // getStackerContactUrl,
+  getStackerContactUrl,
 } from '../../lib/funders'
 
 export default function (app: App): void {
@@ -98,6 +98,10 @@ export default function (app: App): void {
               type: 'mrkdwn',
               text: `*Website:* ${valueOrFallback(organisation['Website'])}`,
             },
+            {
+              type: 'mrkdwn',
+              text: `*GrantsTracker profile:*\n<${stackerURL}|${organisation['EC-display']}>`,
+            },
           ],
         },
       ]
@@ -151,6 +155,10 @@ const contactCard = ({
         {
           type: 'mrkdwn',
           text: `*Role:* ${valueOrFallback(role)}`,
+        },
+        {
+          type: 'mrkdwn',
+          text: `<${getStackerContactUrl(id)}|GrantsTracker profile>`,
         },
       ],
     },

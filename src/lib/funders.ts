@@ -93,3 +93,6 @@ export const searchContacts = async (term: string) => {
 
 export const createOrg = orgTable.create
 export const createContact = contactsTable.create
+
+export const getStackerContactUrl = (id) =>
+  'https://granttracker.sunriseproject.org.au/contacts/view/con_' + id
