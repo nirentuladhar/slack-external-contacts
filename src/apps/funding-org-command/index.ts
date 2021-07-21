@@ -63,7 +63,7 @@ export default function (app: App): void {
       return { id, firstName, lastName, email, phone, role, notes }
     })
     const stackerURL =
-      'https://granttracker.sunriseproject.org.au/partner-organisations2/view/po2_' +
+      'https://thesunriseproject.stackerhq.com/fundertracker/funding-organisations/view/for_' +
       organisation['RECORD_ID']
     // console.log(organisation['EC-grant-info'])
     const grants = (organisation['EC-grant-info'] || []).map((info) => {
