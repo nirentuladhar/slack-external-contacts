@@ -5,6 +5,7 @@ import { footnote, orEmptyRow } from '../../helpers/blocks'
 
 import {
   getStackerContactUrl,
+  hasPermission,
   searchContacts,
   searchMessages,
 } from '../../lib/funders'
@@ -12,12 +13,19 @@ import {
 export default function (app: App): void {
   app.command('/funding-contacts', async ({ command, ack, respond }) => {
     await ack()
+
+    if (!(await hasPermission(command.user_name))) {
+      await respond('Sorry! You cannot access this command.')
+      return
+    }
+
     if (!command.text) {
       await respond(
         'Please specify text to search to contacts with e.g. `/funding-contacts Kajute`',
       )
       return
     }
+
     const matchingMessages = await searchMessages(command.text)
     if (!matchingMessages.length) {
       await respond(
